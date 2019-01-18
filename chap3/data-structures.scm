@@ -11,8 +11,8 @@
   (define-datatype expval expval?
     (num-val
       (value number?))
-    (bool-val
-      (boolean boolean?))
+   ;; (bool-val
+   ;;   (boolean boolean?))   ; commented for exercise 3.13
     (list-val
       (lst list?)))
   
@@ -29,11 +29,11 @@
 
   ;; expval->bool : ExpVal -> Bool
   ;; Page: 70
-  (define expval->bool
-    (lambda (v)
-      (cases expval v
-	(bool-val (bool) bool)
-	(else (expval-extractor-error 'bool v)))))
+;;  (define expval->bool
+;;    (lambda (v)
+;;      (cases expval v
+;;	(bool-val (bool) bool)
+;;	(else (expval-extractor-error 'bool v)))))
 
   (define expval->list
     (lambda (v)
@@ -44,7 +44,7 @@
   (define expval->val
     (lambda (v)
       (cases expval v
-        (bool-val (bool) bool)
+        ;;(bool-val (bool) bool)
         (num-val (num) num)
         (list-val (list) list))))
 

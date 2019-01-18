@@ -22,6 +22,15 @@
         (a-program (exp1)
           (value-of exp1 (init-env))))))
 
+
+  (define value-of-boolexp
+    (lambda (boolean env)
+      (cases boolexp boolean
+        (bool-exp (exp1)
+                  (if (not
+                       (eqv?
+                        (expval->val (value-of exp1 env)))  0)
+                      #t #f)))))
   ;; value-of : Exp * Env -> ExpVal
   ;; Page: 71
   (define value-of
@@ -48,38 +57,39 @@
           (let ((val1 (value-of exp1 env)))
             (let ((num1 (expval->num val1)))
               (if (zero? num1)
-                (bool-val #t)
-                (bool-val #f)))))
+                (num-val 1)
+                (num-val 0)))))
         [equal?-exp (exp1 exp2)
                     (let ((val1 (value-of exp1 env))
                           (val2 (value-of exp2 env)))
                       (let ((num1 (expval->num val1))
                             (num2 (expval->num val2)))
-                        (if (eqv? num1 num2) (bool-val #t) (bool-val #f))))]
+                        (if (eqv? num1 num2) (num-val 1) (num-val 0))))]
         [greater?-exp (exp1 exp2)
                       (let ((val1 (value-of exp1 env))
                             (val2 (value-of exp2 env)))
                         (let ((num1 (expval->num val1))
                               (num2 (expval->num val2)))
-                          (if (> num1 num2) (bool-val #t) (bool-val #f))))]
+                          (if (> num1 num2) (num-val 1) (num-val 0))))]
         [less?-exp (exp1 exp2)
                    (let ((val1 (value-of exp1 env))
                          (val2 (value-of exp2 env)))
                      (let ((num1 (expval->num val1))
                            (num2 (expval->num val2)))
-                       (if (< num1 num2) (bool-val #t) (bool-val #f))))]
+                       (if (< num1 num2) (num-val 1) (num-val 0))))]
         ;\commentbox{\ma{\theifspec}}
-        (if-exp (exp1 exp2 exp3)
-          (let ((val1 (value-of exp1 env)))
-            (if (expval->bool val1)
+        (if-exp (boolexp1 exp2 exp3)
+          (let ((boolean (value-of-boolexp boolexp1 env)))
+            (if boolean
               (value-of exp2 env)
               (value-of exp3 env))))
 
         ;\commentbox{\ma{\theletspecsplit}}
-        (let-exp (var exp1 body)
-          (let ((val1 (value-of exp1 env)))
-            (value-of body
-              (extend-env var val1 env))))
+        (let-exp (vars exps body)
+                 ;(let ((val1 (value-of exp1 env)))
+                 ;  (value-of body
+                 ;    (extend-env var val1 env))))
+                 (eval-let vars exps body env))
         [emptylist-exp () (list-val '())]
         [cons-exp (carexp cdrexp)
           (let ((carobj (expval->val (value-of carexp env)))
@@ -92,10 +102,20 @@
         [cond-exp (conditions actions)
                   (eval-cond conditions actions env)]
         )))
+
+  (define (extends-env vars vals env)
+    (if (null? vars) env
+        (extends-env (cdr vars)
+                     (cdr vals)
+                     (extend-env (car vars) (car vals) env))))
+  (define (eval-let vars exps body env)
+    (let ((vals (map (lambda (a) (value-of a env)) exps)))
+      (value-of body (extends-env vars vals env))))
+
   (define (eval-cond conditions actions env)
     (cond ((null? conditions)
-           (bool-val #f))
-          ((expval->bool (value-of (car conditions) env))
+           (num-val 0))
+          ( (value-of-boolexp (car conditions) env)
            (value-of (car actions) env))
           (else
            (eval-cond (cdr conditions) (cdr actions) env))))

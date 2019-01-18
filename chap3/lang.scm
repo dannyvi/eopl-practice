@@ -51,15 +51,17 @@
        less?-exp)
 
       (expression
-       ("if" expression "then" expression "else" expression)
+       ("if" boolexp "then" expression "else" expression)
        if-exp)
+
+      (boolexp (expression) bool-exp)
 
       (expression ("emptylist") emptylist-exp)
 
       (expression (identifier) var-exp)
 
       (expression
-       ("let" identifier "=" expression "in" expression)
+       ("let" (arbno identifier "=" expression) "in" expression)
        let-exp)
 
       (expression
@@ -83,7 +85,7 @@
        list-exp)
 
       (expression
-       ("cond" (arbno expression "==>" expression) "end")
+       ("cond" (arbno boolexp "==>" expression) "end")
        cond-exp)
 
       ))
