@@ -85,11 +85,13 @@
               (value-of exp3 env))))
 
         ;\commentbox{\ma{\theletspecsplit}}
-        (let-exp (vars exps body)
+        [let-exp (vars exps body)
                  ;(let ((val1 (value-of exp1 env)))
                  ;  (value-of body
                  ;    (extend-env var val1 env))))
-                 (eval-let vars exps body env))
+          (eval-let vars exps body env)]
+        [let*-exp (vars exps body)
+          (eval-let* vars exps body env)]
         [emptylist-exp () (list-val '())]
         [cons-exp (carexp cdrexp)
           (let ((carobj (expval->val (value-of carexp env)))
@@ -111,6 +113,14 @@
   (define (eval-let vars exps body env)
     (let ((vals (map (lambda (a) (value-of a env)) exps)))
       (value-of body (extends-env vars vals env))))
+
+  (define (eval-let* vars exps body env)
+    (if (null? vars) (value-of body env)
+        (let [(new-env (extend-env
+                        (car vars)
+                        (value-of (car exps) env)
+                        env))]
+          (eval-let* (cdr vars) (cdr exps) body new-env))))
 
   (define (eval-cond conditions actions env)
     (cond ((null? conditions)
