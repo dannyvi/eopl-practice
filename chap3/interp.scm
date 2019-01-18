@@ -92,6 +92,8 @@
           (eval-let vars exps body env)]
         [let*-exp (vars exps body)
           (eval-let* vars exps body env)]
+        [unpack-exp (vars expr body)
+          (eval-unpack vars expr body env)]
         [emptylist-exp () (list-val '())]
         [cons-exp (carexp cdrexp)
           (let ((carobj (expval->val (value-of carexp env)))
@@ -110,6 +112,7 @@
         (extends-env (cdr vars)
                      (cdr vals)
                      (extend-env (car vars) (car vals) env))))
+
   (define (eval-let vars exps body env)
     (let ((vals (map (lambda (a) (value-of a env)) exps)))
       (value-of body (extends-env vars vals env))))
@@ -121,6 +124,11 @@
                         (value-of (car exps) env)
                         env))]
           (eval-let* (cdr vars) (cdr exps) body new-env))))
+
+  (define (eval-unpack vars expr body env)
+    (let ((vals (map (lambda (x) (const-exp x))
+                     (expval->val (value-of expr env)))))
+      (eval-let vars vals body env)))
 
   (define (eval-cond conditions actions env)
     (cond ((null? conditions)

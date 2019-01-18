@@ -69,6 +69,11 @@
        let*-exp)
 
       (expression
+       ("unpack" (arbno identifier) "=" expression "in" expression)
+       unpack-exp)
+
+
+      (expression
        ("cons" "(" expression "," expression ")")
        cons-exp)
 
