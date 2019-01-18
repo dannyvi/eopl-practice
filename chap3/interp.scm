@@ -36,31 +36,13 @@
         (var-exp (var) (apply-env env var))
 
         ;\commentbox{\diffspec}
-        (diff-exp (exp1 exp2)
+        (op-exp (operator exp1 exp2)
           (let ((val1 (value-of exp1 env))
                 (val2 (value-of exp2 env)))
             (let ((num1 (expval->num val1))
                   (num2 (expval->num val2)))
               (num-val
-                (- num1 num2)))))
-        [add-exp (exp1 exp2)
-                 (let ((val1 (value-of exp1 env))
-                       (val2 (value-of exp2 env)))
-                   (let ((num1 (expval->num val1))
-                         (num2 (expval->num val2)))
-                     (num-val (+ num1 num2))))]
-        [mult-exp (exp1 exp2)
-                  (let ((val1 (value-of exp1 env))
-                        (val2 (value-of exp2 env)))
-                    (let ((num1 (expval->num val1))
-                          (num2 (expval->num val2)))
-                      (num-val (* num1 num2))))]
-        [quotient-exp (exp1 exp2)
-                      (let ((val1 (value-of exp1 env))
-                            (val2 (value-of exp2 env)))
-                        (let ((num1 (expval->num val1))
-                              (num2 (expval->num val2)))
-                          (num-val (quotient num1 num2))))]
+                ((eval operator) num1 num2)))))
         ;\commentbox{\zerotestspec}
         (zero?-exp (exp1)
           (let ((val1 (value-of exp1 env)))
@@ -107,8 +89,16 @@
         [cdr-exp (exp1) (list-val (cdr (expval->list exp1)))]
         [null?-exp (exp1) (null? (expval->list exp1))]
         [list-exp (params) (list-val params)]
+        [cond-exp (conditions actions)
+                  (eval-cond conditions actions env)]
         )))
-
+  (define (eval-cond conditions actions env)
+    (cond ((null? conditions)
+           (bool-val #f))
+          ((expval->bool (value-of (car conditions) env))
+           (value-of (car actions) env))
+          (else
+           (eval-cond (cdr conditions) (cdr actions) env))))
 
   )
 

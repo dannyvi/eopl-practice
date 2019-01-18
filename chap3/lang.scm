@@ -13,6 +13,7 @@
   (define the-lexical-spec
     '((whitespace (whitespace) skip)
       (comment ("%" (arbno (not #\newline))) skip)
+      (operator ((or "+" "-" "*" "/")) symbol)
       (identifier
        (letter (arbno (or letter digit "_" "-" "?")))
        symbol)
@@ -26,20 +27,8 @@
       (expression (number) const-exp)
 
       (expression
-       ("-" "(" expression "," expression ")")
-       diff-exp)
-
-      (expression
-       ("+" "(" expression "," expression ")")
-       add-exp)
-
-      (expression
-       ("*" "(" expression "," expression ")")
-       mult-exp)
-
-      (expression
-       ("/" "(" expression "," expression ")")
-       quotient-exp)
+       (operator "(" expression "," expression ")")
+       op-exp)
 
       (expression
        ("minus" "(" expression ")")
@@ -92,6 +81,10 @@
       (expression
        ("list" "(" (separated-list number ",") ")")
        list-exp)
+
+      (expression
+       ("cond" (arbno expression "==>" expression) "end")
+       cond-exp)
 
       ))
 
