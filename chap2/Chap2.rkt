@@ -149,6 +149,59 @@
 ;; 1. pair: () -> (a . 10)
 ;; 2. double-list: (() ()) -> ((a b c) (1 2 3))
 
+;; 2.18
+#lang eopl
+;; NodeInSequence ::= (Int Listof(Int) Listof(Int))
+(define report-number-sequence-error
+  (lambda (proc msg number-seq)
+    (eopl:error proc msg number-seq)))
 
+(define number->sequence
+  (lambda (number)
+    (list number '() '())))
+
+(define current-element
+  (lambda (number-seq)
+    (car number-seq)))
+
+(define at-left-end?
+  (lambda (number-seq) (null? (caddr number-seq))))
+
+(define at-right-end?
+  (lambda (number-seq) (null? (cadr number-seq))))
+
+(define move-to-left
+  (lambda (number-seq)
+    (if (at-left-end? number-seq)
+        (report-number-sequence-error 'move-to-left
+                                      "Already at left most -- ~s"
+                                      number-seq)
+        (list
+         (caaddr number-seq)
+         (cons (current-element number-seq) (cadr number-seq))
+         (cdaddr number-seq)))))
+
+(define move-to-right
+  (lambda (number-seq)
+    (if (at-right-end? number-seq)
+        (report-number-sequence-error 'move-to-right
+                                      "Already at right most -- ~s"
+                                      number-seq)
+        (list
+         (caadr number-seq)
+         (cdadr number-seq)
+         (cons (current-element number-seq) (caddr number-seq))))))
+
+(define insert-to-left
+  (lambda (number number-seq)
+    (list (current-element number-seq)
+          (cons number (cadr number-seq))
+          (caddr number-seq))))
+
+(define insert-to-right
+  (lambda (number number-seq)
+    (list (current-element number-seq)
+          (cadr number-seq)
+          (cons number (caddr number-seq)))))
 
 
