@@ -72,11 +72,17 @@
                             (free-vars-in (list var) body) env)))
             (proc-val (procedure var body local-env))))
 
+        (traceproc-exp (var body)
+          (let ((local-env (init-local-env
+                            (free-vars-in (list var) body) env)))
+            (proc-val (trace-procedure var
+                                 body local-env))))
+
         (letproc-exp (id1 id2 body)
           (extend-env id1 (proc-val (procedure id2 body env)) env))
 
         (proc*-exp (vars body)
-            (eval-proc* vars body env))
+            (apply-proc* vars body env))
 
         (call-exp (rator rand)
           (let ((proc (expval->proc (value-of rator env)))
@@ -106,13 +112,19 @@
     (lambda (proc1 val)
       (cases proc proc1
         (procedure (var body saved-env)
-          (value-of body (extend-env var val saved-env))))))
+                   (value-of body (extend-env var val saved-env)))
+        (trace-procedure (var body saved-env)
+          (begin
+            (display "start proc !" )
+            (let ((result (value-of body (extend-env var val saved-env))))
+              (begin (display "ending") result))
+            )))))
 
-  (define eval-proc*
+  (define apply-proc*
     (lambda (vars body env)
       (if (null? vars)
           (value-of body env)
-          (eval-proc* (cdr vars)
+          (apply-proc* (cdr vars)
                       (proc-exp (car vars) body) env)
           )))
 

@@ -49,6 +49,10 @@
        proc-exp)
 
       (expression
+       ("traceproc" "(" identifier ")" expression)
+       traceproc-exp)
+
+      (expression
        ("letproc" identifier "(" identifier ")" expression)
        letproc-exp)
 

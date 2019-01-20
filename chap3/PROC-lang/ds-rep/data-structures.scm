@@ -71,6 +71,10 @@
     (procedure
       (var symbol?)
       (body expression?)
+      (env environment?))
+    (trace-procedure
+      (var symbol?)
+      (body expression?)
       (env environment?)))
 
 ;;;;;;;;;;;;;;;; environment structures ;;;;;;;;;;;;;;;;
