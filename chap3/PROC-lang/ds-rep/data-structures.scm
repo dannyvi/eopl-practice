@@ -18,7 +18,9 @@
     (list-val
       (lst list?))
     (proc-val 
-      (proc proc?)))
+     (proc proc?))
+    (prim-val
+     (prim procedure?)))
 
 ;;; extractors:
 
@@ -50,6 +52,12 @@
 	(proc-val (proc) proc)
 	(else (expval-extractor-error 'proc v)))))
 
+  (define expval->prim
+    (lambda (v)
+      (cases expval v
+             (prim-val (prim) prim)
+             (else (expval-extractor-error 'prim v)))))
+  
   (define expval-extractor-error
     (lambda (variant value)
       (eopl:error 'expval-extractors "Looking for a ~s, found ~s"

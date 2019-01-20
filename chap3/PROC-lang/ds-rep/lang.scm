@@ -14,6 +14,8 @@
       (identifier
        (letter (arbno (or letter digit "_" "-" "?")))
        symbol)
+      ;(primitive ((or "-" "+" )) symbol)
+      (primitive ((or "-" "+" "*")) symbol)
       (number (digit (arbno digit)) number)
       (number ("-" digit (arbno digit)) number)
       ))
@@ -22,9 +24,9 @@
     '((program (expression) a-program)
 
       (expression (number) const-exp)
-      (expression
-        ("-" "(" expression "," expression ")")
-        diff-exp)
+      ;(expression
+      ;  ("-" "(" expression "," expression ")")
+      ;  diff-exp)
 
       (expression
        ("zero?" "(" expression ")")
@@ -35,6 +37,8 @@
        if-exp)
 
       (expression (identifier) var-exp)
+
+      (expression (primitive) prim-exp)
 
       (expression
        ("let" identifier "=" expression "in" expression)

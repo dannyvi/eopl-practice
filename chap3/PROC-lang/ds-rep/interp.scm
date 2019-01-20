@@ -35,14 +35,16 @@
         ;\commentbox{ (value-of (var-exp \x{}) \r) = (apply-env \r \x{})}
         (var-exp (var) (apply-env env var))
 
+        (prim-exp (prim) (prim-val (eval prim)))
+
         ;\commentbox{\diffspec}
-        (diff-exp (exp1 exp2)
-          (let ((val1 (value-of exp1 env))
-                (val2 (value-of exp2 env)))
-            (let ((num1 (expval->num val1))
-                  (num2 (expval->num val2)))
-              (num-val
-                (- num1 num2)))))
+;        (diff-exp (exp1 exp2)
+;          (let ((val1 (value-of exp1 env))
+;                (val2 (value-of exp2 env)))
+;            (let ((num1 (expval->num val1))
+;                  (num2 (expval->num val2)))
+;              (num-val
+;                (- num1 num2)))))
 
         ;\commentbox{\zerotestspec}
         (zero?-exp (exp1)
@@ -79,10 +81,17 @@
                 (arg (value-of rand env)))
             (apply-procedure proc arg)))
 
-        (call*-exp (rator rands)
-                   (let ((proc1 (expval->proc (value-of rator env)))
-                         (args (map (lambda (rand) (value-of rand env)) rands)))
-            (eval-call* proc1 (reverse args))))
+        (call*-exp (ratorexp rands)
+                  ;; (if (prim-val? ratorexp)
+          (let ((rator (value-of ratorexp env)))
+          (cases expval rator
+            (prim-val (proc1) (num-val (proc1
+                               (expval->num (value-of (car rands) env))
+                               (expval->num (value-of (cadr rands) env))) ))
+            (proc-val (proc1) (let ((args (map (lambda (rand) (value-of rand env)) rands)))
+                  (eval-call* proc1 (reverse args))))
+            (else (expval-extractor-error 'proc rator))
+            )))
         )))
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
@@ -95,11 +104,10 @@
 
   (define eval-proc*
     (lambda (vars body env)
-      (if (null? (cdr vars))
-          (proc-val (procedure (car vars) body env))
+      (if (null? vars)
+          (value-of body env)
           (eval-proc* (cdr vars)
                       (proc-exp (car vars) body) env)
-          ;;(proc-exp (car vars) (eval-proc* (cdr vars) body env))
           )))
 
   (define eval-call*
@@ -107,7 +115,5 @@
       (if (null? (cdr args))
           (apply-procedure proc1 (car args))
           (eval-call* (expval->proc (apply-procedure proc1 (car args)))
-                      (cdr args) )
-
-          )))
+                      (cdr args)))))
   )
