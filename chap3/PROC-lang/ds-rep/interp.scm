@@ -38,13 +38,13 @@
         (prim-exp (prim) (prim-val (eval prim)))
 
         ;\commentbox{\diffspec}
-;        (diff-exp (exp1 exp2)
-;          (let ((val1 (value-of exp1 env))
-;                (val2 (value-of exp2 env)))
-;            (let ((num1 (expval->num val1))
-;                  (num2 (expval->num val2)))
-;              (num-val
-;                (- num1 num2)))))
+        ;        (diff-exp (exp1 exp2)
+        ;          (let ((val1 (value-of exp1 env))
+        ;                (val2 (value-of exp2 env)))
+        ;            (let ((num1 (expval->num val1))
+        ;                  (num2 (expval->num val2)))
+        ;              (num-val
+        ;                (- num1 num2)))))
 
         ;\commentbox{\zerotestspec}
         (zero?-exp (exp1)
@@ -68,7 +68,9 @@
               (extend-env var val1 env))))
 
         (proc-exp (var body)
-          (proc-val (procedure var body env)))
+          (let ((local-env (init-local-env
+                            (free-vars-in (list var) body) env)))
+            (proc-val (procedure var body local-env))))
 
         (letproc-exp (id1 id2 body)
           (extend-env id1 (proc-val (procedure id2 body env)) env))
@@ -88,8 +90,12 @@
             (prim-val (proc1) (num-val (proc1
                                (expval->num (value-of (car rands) env))
                                (expval->num (value-of (cadr rands) env))) ))
-            (proc-val (proc1) (let ((args (map (lambda (rand) (value-of rand env)) rands)))
-                  (eval-call* proc1 (reverse args))))
+            (proc-val (proc1)
+                      (let ((args
+                             (map
+                              (lambda (rand)
+                                (value-of rand env)) rands)))
+                        (eval-call* proc1 (reverse args))))
             (else (expval-extractor-error 'proc rator))
             )))
         )))
@@ -116,4 +122,48 @@
           (apply-procedure proc1 (car args))
           (eval-call* (expval->proc (apply-procedure proc1 (car args)))
                       (cdr args)))))
-  )
+
+  ;; exercise 3.26
+  ;; build local environment
+  (define free-vars-in
+    (lambda (bounds body)
+      (cases expression body
+        (var-exp (var) (if (member var bounds) '() (list var)))
+        (zero?-exp (exp1) (free-vars-in bounds exp1))
+        (if-exp (exp1 exp2 exp3)
+                (append (free-vars-in bounds exp1)
+                        (free-vars-in bounds exp2)
+                        (free-vars-in bounds exp3)))
+        (let-exp (var exp1 body)
+                 (append (free-vars-in bounds exp1)
+                         (free-vars-in (cons var bounds) body)))
+        (proc-exp (var body) (free-vars-in (cons var bounds) body))
+        (letproc-exp (id1 id2 body) (free-vars-in (cons id2 bounds) body))
+        (proc*-exp (vars body) (free-vars-in (append vars bounds) body))
+        (call-exp (rator rand)
+                  (append (free-vars-in bounds rator)
+                          (free-vars-in bounds rand)))
+        (call*-exp (rator-exp rands)
+          (apply append (cons (free-vars-in bounds rator-exp)
+                              (map (lambda (rand)
+                                     (free-vars-in bounds rand)) rands))))
+        (else '()))))
+
+  (define init-local-env
+    (lambda (free-vars env)
+      (if (null? free-vars)
+          (empty-env)
+          (bind-value (car free-vars) (init-local-env (cdr free-vars) env) env))))
+
+  (define bind-value
+    (lambda (search-sym local-env env)
+      (if (empty-env? env)
+          local-env
+          (let ((sym (extended-env-record->sym env))
+                (val (extended-env-record->val env))
+                (old-env (extended-env-record->old-env env)))
+            (if (eqv? search-sym sym)
+                (extend-env sym val local-env)
+                (bind-value search-sym local-env old-env))))))
+
+)
