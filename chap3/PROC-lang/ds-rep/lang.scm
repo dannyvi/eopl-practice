@@ -45,12 +45,22 @@
        let-exp)
 
       (expression
+       ("let*" (arbno identifier "=" expression) "in" expression)
+       let*-exp)
+
+
+      (expression
        ("proc" "(" identifier ")" expression)
        proc-exp)
 
       (expression
        ("traceproc" "(" identifier ")" expression)
        traceproc-exp)
+
+      (expression
+       ("dynamic-proc*"
+        "(" (separated-list identifier "," ")" expression))
+       dynamic-proc-exp)
 
       (expression
        ("letproc" identifier "(" identifier ")" expression)

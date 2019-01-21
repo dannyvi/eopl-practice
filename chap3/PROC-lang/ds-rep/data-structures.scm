@@ -58,6 +58,17 @@
              (prim-val (prim) prim)
              (else (expval-extractor-error 'prim v)))))
   
+  (define expval->val
+    (lambda (v)
+      (cases expval v
+        (num-val (num) num)
+        (bool-val (bool) bool)
+        (list-val (lst) lst)
+        (proc-val (proc) proc)
+        (prim-val (prim) prim)
+        (else (eopl:error "Not valid ~s" v))
+        )))
+
   (define expval-extractor-error
     (lambda (variant value)
       (eopl:error 'expval-extractors "Looking for a ~s, found ~s"

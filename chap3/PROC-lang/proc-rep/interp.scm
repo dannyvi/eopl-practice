@@ -1,11 +1,11 @@
 (module interp (lib "eopl.ss" "eopl")
-  
+
   ;; interpreter for the PROC language, using the procedural
   ;; representation of procedures.
 
   ;; The \commentboxes are the latex code for inserting the rules into
   ;; the code in the book. These are too complicated to put here, see
-  ;; the text, sorry. 
+  ;; the text, sorry.
 
   (require "drscheme-init.scm")
 
@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
 
   ;; value-of-program : Program -> ExpVal
-  (define value-of-program 
+  (define value-of-program
     (lambda (pgm)
       (cases program pgm
         (a-program (exp1)
@@ -51,7 +51,7 @@
               (if (zero? num1)
                 (bool-val #t)
                 (bool-val #f)))))
-              
+
         ;\commentbox{\ma{\theifspec}}
         (if-exp (exp1 exp2 exp3)
           (let ((val1 (value-of exp1 env)))
@@ -60,11 +60,14 @@
               (value-of exp3 env))))
 
         ;\commentbox{\ma{\theletspecsplit}}
-        (let-exp (var exp1 body)       
+        (let-exp (var exp1 body)
           (let ((val1 (value-of exp1 env)))
             (value-of body
               (extend-env var val1 env))))
-        
+
+        (let*-exp (vars exps body)
+          (apply-let* vars exps body env))
+
         (proc-exp (var body)
           (proc-val (procedure var body env)))
 
@@ -76,13 +79,23 @@
         )))
 
 
+  (define apply-let*
+    (lambda (vars exps body env)
+      (if (null? vars)
+          (value-of body env)
+          (let ((val (value-of (car exps) env)))
+            (apply-let* (cdr vars)
+                        (cdr exps)
+                        body
+                        (extend-env (car vars) val env))))))
+
   ;; procedure : Var * Exp * Env -> Proc
   ;; Page: 79
   (define procedure
     (lambda (var body env)
       (lambda (val)
         (value-of body (extend-env var val env)))))
-  
+
   ;; apply-procedure : Proc * ExpVal -> ExpVal
   ;; Page: 79
   (define apply-procedure

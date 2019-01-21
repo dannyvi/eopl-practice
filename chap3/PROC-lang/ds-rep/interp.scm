@@ -65,7 +65,13 @@
         (let-exp (var exp1 body)
           (let ((val1 (value-of exp1 env)))
             (value-of body
-              (extend-env var val1 env))))
+                      (extend-env var val1 env))))
+
+        (let*-exp (vars exps body)
+          (apply-let* vars exps body env))
+
+        (let-dynamic-exp (vars exps body)
+          (apply-let-dynamic vars exps body env))
 
         (proc-exp (var body)
           (let ((local-env (init-local-env
@@ -75,14 +81,13 @@
         (traceproc-exp (var body)
           (let ((local-env (init-local-env
                             (free-vars-in (list var) body) env)))
-            (proc-val (trace-procedure var
-                                 body local-env))))
+            (proc-val (trace-procedure var body local-env))))
 
         (letproc-exp (id1 id2 body)
           (extend-env id1 (proc-val (procedure id2 body env)) env))
 
         (proc*-exp (vars body)
-            (apply-proc* vars body env))
+            (def-proc* vars body env))
 
         (call-exp (rator rand)
           (let ((proc (expval->proc (value-of rator env)))
@@ -101,10 +106,24 @@
                              (map
                               (lambda (rand)
                                 (value-of rand env)) rands)))
-                        (eval-call* proc1 (reverse args))))
+                        (apply-*proc proc1 (reverse args))))
             (else (expval-extractor-error 'proc rator))
             )))
         )))
+
+  (define apply-let*
+    (lambda (vars exps body env)
+      (if (null? vars)
+          (value-of body env)
+          (let ((val (value-of (car exps) env)))
+            (apply-let* (cdr vars)
+                        (cdr exps)
+                        body
+                        (extend-env (car vars) val env))))))
+
+ ;; (define apply-let-dynamic
+ ;;   (lambda (vars exps body env)
+ ;;     (if (null? vars))))
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
   ;; Page: 79
@@ -114,25 +133,33 @@
         (procedure (var body saved-env)
                    (value-of body (extend-env var val saved-env)))
         (trace-procedure (var body saved-env)
-          (begin
-            (display "start proc !" )
-            (let ((result (value-of body (extend-env var val saved-env))))
-              (begin (display "ending") result))
+          (let ((result (value-of body (extend-env var val saved-env))))
+            (begin
+              (eopl:printf
+               "~s \nvar: ~s ~s \nbody: ~s ~s \nenv: ~s ~n~s ~n"
+               'tracing=proc======================================
+               var
+               (expval->val val)
+               body
+               (expval->val result)
+               (extend-env var val saved-env)
+               'ending============================================)
+              result)
             )))))
 
-  (define apply-proc*
+  (define def-proc*
     (lambda (vars body env)
       (if (null? vars)
           (value-of body env)
-          (apply-proc* (cdr vars)
+          (def-proc* (cdr vars)
                       (proc-exp (car vars) body) env)
           )))
 
-  (define eval-call*
+  (define apply-*proc
     (lambda (proc1 args)
       (if (null? (cdr args))
           (apply-procedure proc1 (car args))
-          (eval-call* (expval->proc (apply-procedure proc1 (car args)))
+          (apply-*proc (expval->proc (apply-procedure proc1 (car args)))
                       (cdr args)))))
 
   ;; exercise 3.26
