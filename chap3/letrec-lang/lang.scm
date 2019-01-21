@@ -58,16 +58,29 @@
        call*-exp)
 
       (expression
-        ("letrec"
-          identifier "(" identifier ")" "=" expression
+       ("letrec"
+         identifier "(" identifier ")" "=" expression 
+        "in" expression)
+       letrec-exp)
+
+
+      (expression
+        ("letrec-mutual"
+          (arbno identifier "(" identifier ")" "=" expression )
            "in" expression)
-        letrec-exp)
+        letrec-mutual-exp)
 
       (expression
        ("letrec*"
         identifier "(" (separated-list identifier ",") ")" "=" expression
         "in" expression)
        letrec*-exp)
+
+      (expression
+       ("letrec*-mutual"
+        (arbno identifier "(" (separated-list identifier ",") ")" "=" expression )
+        "in" expression)
+       letrec*-mutual-exp)
 
       ))
 

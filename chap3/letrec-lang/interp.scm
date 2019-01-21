@@ -9,6 +9,9 @@
   (require "lang.scm")
   (require "data-structures.scm")
   (require "environments.scm")
+  
+  (require (only-in racket last ))
+
 
   (provide value-of-program value-of)
 
@@ -86,10 +89,25 @@
           (value-of letrec-body
                     (extend-env-rec p-name b-var p-body env)))
 
+        (letrec-mutual-exp (p-names b-vars p-bodys letrec-body)
+                    (value-of letrec-body
+                              (extend-env-rec-mutual p-names b-vars p-bodys env)))
+
         (letrec*-exp (p-name b-vars p-body letrec-body)
           (value-of letrec-body
                     (extend-env-rec* p-name b-vars p-body env)))
+
+        (letrec*-mutual-exp (p-names b-vars p-bodys letrec-body)
+                           (value-of letrec-body
+                                     (extend-env-rec*-mutual p-names b-vars p-bodys env)))
         )))
+
+
+;  (define extend-env-rec-mutual
+;    (lambda (p-names b-vars p-bodys env)
+;      (if (null? p-names) env
+;          (extend-env-rec-mutual (cdr p-names) (cdr b-vars) (cdr p-bodys)
+;            (extend-env-rec (car p-names) (car b-vars) (car p-bodys) env)))))
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
 
@@ -97,7 +115,21 @@
     (lambda (proc1 arg)
       (cases proc proc1
         (procedure (var body saved-env)
-                   (value-of body (extend-env var arg saved-env))))))
+                   (value-of body (extend-env var arg saved-env)))
+        (trace-procedure (var body saved-env)
+                         (let ((result (value-of body (extend-env var arg saved-env))))
+                           (begin
+                             (eopl:printf
+                              "~s \nvar: ~s ~s \nbody: ~s ~s \nenv: ~s ~n~s ~n"
+                              'tracing=proc======================================
+                              var
+                              (expval->val arg)
+                              body
+                              (expval->val result)
+                              (extend-env var arg saved-env)
+                              'ending============================================)
+                             result)))
+        )))
 
   (define def-proc*
     (lambda (vars body env)
@@ -119,6 +151,22 @@
           (extend-env-rec p-name (car b-vars) p-body env)
           (extend-env-rec* p-name (cdr b-vars)
                            (proc-exp (car b-vars) p-body) env))))
+  (define currying
+    (lambda (vars body)
+      (if (null? (cdr vars)) body
+          (currying (cdr vars)
+                    (proc-exp (car vars) body)))))
+
+  (define extend-env-rec*-mutual
+    (lambda (p-names b-var-lists p-bodys env)
+      (extend-env-rec-mutual
+       p-names
+       (map last b-var-lists)
+       (map currying b-var-lists p-bodys)
+       env)
+      )
+    )
+
 
   )
 

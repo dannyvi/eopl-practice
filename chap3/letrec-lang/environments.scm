@@ -4,8 +4,7 @@
   ;; data-structures.scm.
 
   (require "data-structures.scm")
-  ;; (require "interp.scm")
-
+  (require racket)
   (provide init-env empty-env extend-env apply-env)
 
 ;;;;;;;;;;;;;;;; initial environment ;;;;;;;;;;;;;;;;
@@ -43,6 +42,13 @@
                              (if (eqv? search-sym p-name)
                                  (proc-val (procedure b-var p-body env))
                                  (apply-env saved-env search-sym)))
-             )))
+             (extend-env-rec-mutual (p-names b-vars p-bodys saved-env)
+               (let ((index (index-of p-names search-sym)))
+                 (if index
+                     (proc-val (procedure (list-ref b-vars index)
+                                          (list-ref p-bodys index) env))
+                     (apply-env saved-env search-sym))))
+           
 
+             )))
   )

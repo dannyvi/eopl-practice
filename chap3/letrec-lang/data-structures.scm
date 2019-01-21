@@ -41,6 +41,15 @@
 	(proc-val (proc) proc)
 	(else (expval-extractor-error 'proc v)))))
 
+  (define expval->val
+    (lambda (v)
+      (cases expval v
+             (num-val (num) num)
+             (bool-val (bool) bool)
+             (proc-val (proc) proc)
+             (else (eopl:error "Not valid ~s" v))
+             )))
+
   (define expval-extractor-error
     (lambda (variant value)
       (eopl:error 'expval-extractors "Looking for a ~s, found ~s"
@@ -54,7 +63,11 @@
     (procedure
       (bvar symbol?)
       (body expression?)
-      (env environment?)))
+      (env environment?))
+    (trace-procedure
+     (var symbol?)
+     (body expression?)
+     (env environment?)))
 
   ;; Page: 86
   (define-datatype environment environment?
@@ -68,6 +81,20 @@
       (bvar symbol?)
       (body expression?)
       (saved-env environment?))
+    (extend-env-rec-mutual
+     (ids (list-of symbol?))
+     (bvars (list-of symbol?))
+     (bodys (list-of expression?))
+     (saved-env environment?))
+
+
     )
 
+  (define list-of
+    (lambda (pred)
+      (lambda (val)
+        (or (null? val)
+            (and (pair? val)
+                 (pred (car val))
+                 ((list-of pred) (cdr val)))))))
 )
