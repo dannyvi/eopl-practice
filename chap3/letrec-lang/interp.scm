@@ -1,5 +1,5 @@
 (module interp (lib "eopl.ss" "eopl")
-  
+
   ;; interpreter for the LETREC language.  The \commentboxes are the
   ;; latex code for inserting the rules into the code in the book.
   ;; These are too complicated to put here, see the text, sorry.
@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
 
   ;; value-of-program : Program -> ExpVal
-  (define value-of-program 
+  (define value-of-program
     (lambda (pgm)
       (cases program pgm
         (a-program (exp1)
@@ -49,7 +49,7 @@
               (if (zero? num1)
                 (bool-val #t)
                 (bool-val #f)))))
-              
+
         ;\commentbox{\ma{\theifspec}}
         (if-exp (exp1 exp2 exp3)
           (let ((val1 (value-of exp1 env)))
@@ -58,23 +58,37 @@
               (value-of exp3 env))))
 
         ;\commentbox{\ma{\theletspecsplit}}
-        (let-exp (var exp1 body)       
+        (let-exp (var exp1 body)
           (let ((val1 (value-of exp1 env)))
             (value-of body
               (extend-env var val1 env))))
-        
+
         (proc-exp (var body)
           (proc-val (procedure var body env)))
+
+        (proc*-exp (vars body)
+          (def-proc* vars body env))
 
         (call-exp (rator rand)
           (let ((proc (expval->proc (value-of rator env)))
                 (arg (value-of rand env)))
             (apply-procedure proc arg)))
 
+        (call*-exp (rator-exp rands)
+          (let ((rator (value-of rator-exp env)))
+            (cases expval rator
+              (proc-val (proc1)
+                (let ((args (map (lambda (rand) (value-of rand env)) rands)))
+                  (apply-proc* proc1 (reverse args))))
+              (else (expval-extractor-error 'proc rator)))))
+
         (letrec-exp (p-name b-var p-body letrec-body)
           (value-of letrec-body
-            (extend-env-rec p-name b-var p-body env)))
+                    (extend-env-rec p-name b-var p-body env)))
 
+        (letrec*-exp (p-name b-vars p-body letrec-body)
+          (value-of letrec-body
+                    (extend-env-rec* p-name b-vars p-body env)))
         )))
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
@@ -83,10 +97,31 @@
     (lambda (proc1 arg)
       (cases proc proc1
         (procedure (var body saved-env)
-          (value-of body (extend-env var arg saved-env))))))
-  
+                   (value-of body (extend-env var arg saved-env))))))
+
+  (define def-proc*
+    (lambda (vars body env)
+      (if (null? vars)
+          (value-of body env)
+          (def-proc* (cdr vars)
+            (proc-exp (car vars) body) env))))
+
+  (define apply-proc*
+    (lambda (proc1 args)
+      (if (null? (cdr args))
+          (apply-procedure proc1 (car args))
+          (apply-proc* (expval->proc (apply-procedure proc1 (car args)))
+                       (cdr args)))))
+
+  (define extend-env-rec*
+    (lambda (p-name b-vars p-body env)
+      (if (null? (cdr b-vars))
+          (extend-env-rec p-name (car b-vars) p-body env)
+          (extend-env-rec* p-name (cdr b-vars)
+                           (proc-exp (car b-vars) p-body) env))))
+
   )
-  
 
 
-  
+
+
