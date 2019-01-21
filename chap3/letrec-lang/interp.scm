@@ -1,11 +1,8 @@
 (module interp (lib "eopl.ss" "eopl")
-
-  ;; interpreter for the PROC language, using the procedural
-  ;; representation of procedures.
-
-  ;; The \commentboxes are the latex code for inserting the rules into
-  ;; the code in the book. These are too complicated to put here, see
-  ;; the text, sorry.
+  
+  ;; interpreter for the LETREC language.  The \commentboxes are the
+  ;; latex code for inserting the rules into the code in the book.
+  ;; These are too complicated to put here, see the text, sorry.
 
   (require "drscheme-init.scm")
 
@@ -18,13 +15,14 @@
 ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
 
   ;; value-of-program : Program -> ExpVal
-  (define value-of-program
+  (define value-of-program 
     (lambda (pgm)
       (cases program pgm
         (a-program (exp1)
           (value-of exp1 (init-env))))))
 
   ;; value-of : Exp * Env -> ExpVal
+  ;; Page: 83
   (define value-of
     (lambda (exp env)
       (cases expression exp
@@ -51,7 +49,7 @@
               (if (zero? num1)
                 (bool-val #t)
                 (bool-val #f)))))
-
+              
         ;\commentbox{\ma{\theifspec}}
         (if-exp (exp1 exp2 exp3)
           (let ((val1 (value-of exp1 env)))
@@ -60,46 +58,35 @@
               (value-of exp3 env))))
 
         ;\commentbox{\ma{\theletspecsplit}}
-        (let-exp (var exp1 body)
+        (let-exp (var exp1 body)       
           (let ((val1 (value-of exp1 env)))
             (value-of body
               (extend-env var val1 env))))
-
-        (let*-exp (vars exps body)
-          (apply-let* vars exps body env))
-
+        
         (proc-exp (var body)
           (proc-val (procedure var body env)))
 
         (call-exp (rator rand)
           (let ((proc (expval->proc (value-of rator env)))
                 (arg (value-of rand env)))
-            (apply-procedure proc arg env)))
+            (apply-procedure proc arg)))
+
+        (letrec-exp (p-name b-var p-body letrec-body)
+          (value-of letrec-body
+            (extend-env-rec p-name b-var p-body env)))
 
         )))
 
-
-  (define apply-let*
-    (lambda (vars exps body env)
-      (if (null? vars)
-          (value-of body env)
-          (let ((val (value-of (car exps) env)))
-            (apply-let* (cdr vars)
-                        (cdr exps)
-                        body
-                        (extend-env (car vars) val env))))))
-
-  ;; procedure : Var * Exp * Env -> Proc
-  ;; Page: 79
-  (define procedure
-    (lambda (var body env)
-      (lambda (val dynamic-env)
-        (value-of body (extend-env var val dynamic-env)))))
-
   ;; apply-procedure : Proc * ExpVal -> ExpVal
-  ;; Page: 79
-  (define apply-procedure
-    (lambda (proc val dyn-env)
-      (proc val dyn-env)))
 
+  (define apply-procedure
+    (lambda (proc1 arg)
+      (cases proc proc1
+        (procedure (var body saved-env)
+          (value-of body (extend-env var arg saved-env))))))
+  
   )
+  
+
+
+  

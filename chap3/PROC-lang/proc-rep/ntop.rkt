@@ -28,10 +28,5 @@
 ;; ( λz.f(d d)z ) n
 
 
-;; exercise 3.28
-
-;; to do dynamic scope, do not use env in the closure of procedure,
-;; but eval with the current global environment.
-
 
 

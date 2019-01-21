@@ -70,8 +70,6 @@
         (let*-exp (vars exps body)
           (apply-let* vars exps body env))
 
-        (let-dynamic-exp (vars exps body)
-          (apply-let-dynamic vars exps body env))
 
         (proc-exp (var body)
           (let ((local-env (init-local-env
@@ -87,12 +85,13 @@
           (extend-env id1 (proc-val (procedure id2 body env)) env))
 
         (proc*-exp (vars body)
-            (def-proc* vars body env))
+                   (def-proc* vars body env))
+
 
         (call-exp (rator rand)
           (let ((proc (expval->proc (value-of rator env)))
                 (arg (value-of rand env)))
-            (apply-procedure proc arg)))
+            (apply-procedure proc arg env)))
 
         (call*-exp (ratorexp rands)
                   ;; (if (prim-val? ratorexp)
@@ -106,7 +105,7 @@
                              (map
                               (lambda (rand)
                                 (value-of rand env)) rands)))
-                        (apply-*proc proc1 (reverse args))))
+                        (apply-*proc proc1 (reverse args) env)))
             (else (expval-extractor-error 'proc rator))
             )))
         )))
@@ -121,19 +120,17 @@
                         body
                         (extend-env (car vars) val env))))))
 
- ;; (define apply-let-dynamic
- ;;   (lambda (vars exps body env)
- ;;     (if (null? vars))))
+
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
   ;; Page: 79
   (define apply-procedure
-    (lambda (proc1 val)
+    (lambda (proc1 val env)
       (cases proc proc1
         (procedure (var body saved-env)
-                   (value-of body (extend-env var val saved-env)))
+                   (value-of body (extend-env var val env)))
         (trace-procedure (var body saved-env)
-          (let ((result (value-of body (extend-env var val saved-env))))
+          (let ((result (value-of body (extend-env var val env))))
             (begin
               (eopl:printf
                "~s \nvar: ~s ~s \nbody: ~s ~s \nenv: ~s ~n~s ~n"
@@ -155,11 +152,13 @@
                       (proc-exp (car vars) body) env)
           )))
 
+
+
   (define apply-*proc
-    (lambda (proc1 args)
+    (lambda (proc1 args env)
       (if (null? (cdr args))
-          (apply-procedure proc1 (car args))
-          (apply-*proc (expval->proc (apply-procedure proc1 (car args)))
+          (apply-procedure proc1 (car args) env)
+          (apply-*proc (expval->proc (apply-procedure proc1 (car args) env))
                       (cdr args)))))
 
   ;; exercise 3.26
