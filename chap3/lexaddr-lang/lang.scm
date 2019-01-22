@@ -1,6 +1,8 @@
-(module lang (lib "eopl.ss" "eopl")
+(module lang
 
-  ;; grammar for the LETREC language
+  ;; grammar for the LEXADDR language
+
+  (lib "eopl.ss" "eopl")
 
   (require "drscheme-init.scm")
 
@@ -27,20 +29,47 @@
         diff-exp)
 
       (expression
-       ("*" "(" expression "," expression ")")
-       mult-exp)
-
-      (expression
        ("zero?" "(" expression ")")
        zero?-exp)
 
       (expression
-       ("add1" "(" expression ")")
-       add1-exp)
-
-      (expression
        ("if" expression "then" expression "else" expression)
        if-exp)
+
+      (expression
+       ("cond" (arbno expression "==>" expression) "end")
+       cond-exp)
+
+      (expression
+       ("unpack" (arbno identifier) "=" expression "in" expression)
+       unpack-exp)
+
+      (expression
+       ("%unpack"  expression "in" expression)
+       nameless-unpack-exp)
+
+      (expression ("emptylist") emptylist-exp)
+
+      (expression
+       ("cons" "(" expression "," expression ")")
+       cons-exp)
+
+      (expression
+       ("car" "(" expression ")")
+       car-exp)
+
+      (expression
+       ("cdr" "(" expression ")")
+       cdr-exp)
+
+      (expression
+       ("null?" "(" expression ")")
+       null?-exp)
+
+      (expression
+       ("list" "(" (separated-list expression ",") ")")
+       list-exp)
+
 
       (expression (identifier) var-exp)
 
@@ -52,43 +81,17 @@
        ("proc" "(" identifier ")" expression)
        proc-exp)
 
-
-      (expression
-       ("proc*" "(" (separated-list identifier "," ) ")" expression)
-       proc*-exp)
-
       (expression
        ("(" expression expression ")")
        call-exp)
 
+      (expression ("%nameless-var" number) nameless-var-exp)
       (expression
-       ("[" expression (arbno expression) "]")
-       call*-exp)
-
+        ("%let" expression "in" expression)
+        nameless-let-exp)
       (expression
-       ("letrec"
-         identifier "(" identifier ")" "=" expression 
-        "in" expression)
-       letrec-exp)
-
-
-      (expression
-        ("letrec-mutual"
-          (arbno identifier "(" identifier ")" "=" expression )
-           "in" expression)
-        letrec-mutual-exp)
-
-      (expression
-       ("letrec*"
-        identifier "(" (separated-list identifier ",") ")" "=" expression
-        "in" expression)
-       letrec*-exp)
-
-      (expression
-       ("letrec*-mutual"
-        (arbno identifier "(" (separated-list identifier ",") ")" "=" expression )
-        "in" expression)
-       letrec*-mutual-exp)
+        ("%lexproc" expression)
+        nameless-proc-exp)
 
       ))
 
