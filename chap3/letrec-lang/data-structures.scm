@@ -15,7 +15,7 @@
       (value number?))
     (bool-val
       (boolean boolean?))
-    (proc-val 
+    (proc-val
       (proc proc?)))
 
 ;;; extractors:
@@ -74,13 +74,13 @@
     (empty-env)
     (extend-env 
       (bvar symbol?)
-      (bval expval?)
+      (bval (lambda (x) (or (expval? x) (vector? x))))
       (saved-env environment?))
-    (extend-env-rec
-      (id symbol?)
-      (bvar symbol?)
-      (body expression?)
-      (saved-env environment?))
+    ;;(extend-env-rec
+    ;;  (id symbol?)
+    ;;  (bvar symbol?)
+    ;;  (body expression?)
+    ;;  (saved-env environment?))
     (extend-env-rec-mutual
      (ids (list-of symbol?))
      (bvars (list-of symbol?))
@@ -90,6 +90,14 @@
 
     )
 
+  (define extend-env-rec
+    (lambda (p-name b-var body saved-env)
+      (let ((vec (make-vector 1)))
+        (let ((new-env (extend-env p-name vec saved-env)))
+          (vector-set! vec 0
+           (proc-val (procedure b-var body new-env)))
+          new-env))))
+
   (define list-of
     (lambda (pred)
       (lambda (val)
@@ -97,4 +105,6 @@
             (and (pair? val)
                  (pred (car val))
                  ((list-of pred) (cdr val)))))))
+
+
 )

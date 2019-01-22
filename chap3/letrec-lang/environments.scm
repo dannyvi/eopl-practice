@@ -35,20 +35,21 @@
              (empty-env ()
                   (eopl:error 'apply-env "No binding for ~s" search-sym))
              (extend-env (var val saved-env)
+               (let ((proc1 (if (expval? val) val (vector-ref val 0))))
                   (if (eqv? search-sym var)
-                      val
-                      (apply-env saved-env search-sym)))
-             (extend-env-rec (p-name b-var p-body saved-env)
-                             (if (eqv? search-sym p-name)
-                                 (proc-val (procedure b-var p-body env))
-                                 (apply-env saved-env search-sym)))
+                      proc1
+                      (apply-env saved-env search-sym))
+                  ))
+             ;(extend-env-rec (p-name b-var p-body saved-env)
+             ;                (if (eqv? search-sym p-name)
+             ;                    (proc-val (procedure b-var p-body env))
+             ;                    (apply-env saved-env search-sym)))
              (extend-env-rec-mutual (p-names b-vars p-bodys saved-env)
                (let ((index (index-of p-names search-sym)))
                  (if index
                      (proc-val (procedure (list-ref b-vars index)
                                           (list-ref p-bodys index) env))
                      (apply-env saved-env search-sym))))
-           
 
              )))
   )
