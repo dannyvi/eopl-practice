@@ -70,6 +70,17 @@
        ("list" "(" (separated-list expression ",") ")")
        list-exp)
 
+      (expression
+       ("letrec"
+        identifier "(" identifier ")" "=" expression "in" expression)
+       letrec-exp)
+
+      (expression
+       ("%letrec"
+         expression expression)
+       nameless-letrec-var-exp)
+
+      
 
       (expression (identifier) var-exp)
 

@@ -63,6 +63,17 @@
             (translation-of exp1 senv)
             (translation-of body
               (extend-senv var senv))))
+        (letrec-exp (p-name b-var p-body letrec-body)
+          (let ((new-senv (extend-senv  b-var (extend-senv p-name senv))))
+                                        ;nameless-letrec-var-exp
+            (nameless-letrec-var-exp
+             ;(nameless-proc-exp (translation-of p-body new-senv))
+             (translation-of p-body new-senv)
+             (translation-of letrec-body new-senv)
+             )))
+           ; (letrec-exp p-name b-var
+           ;  (nameless-proc-exp (translation-of p-body new-senv))
+           ;  (translation-of letrec-body new-senv))))
         (proc-exp (var body)
           (nameless-proc-exp
             (translation-of body

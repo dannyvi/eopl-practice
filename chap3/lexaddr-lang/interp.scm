@@ -74,6 +74,10 @@
         (call-exp (rator rand)
           (let ((proc (expval->proc (value-of rator nameless-env)))
                 (arg (value-of rand nameless-env)))
+            (display proc)
+            (display "\n")
+            (display arg)
+            (display "\n")
 	    (apply-procedure proc arg)))
 
         (nameless-var-exp (n)
@@ -84,13 +88,17 @@
             (value-of body
               (extend-nameless-env val nameless-env))))
 
+        (nameless-letrec-var-exp (expl body)
+          (value-of body (extend-nameless-env-rec expl body nameless-env)))
+
+
         (nameless-proc-exp (body)
           (proc-val
            (procedure body nameless-env)))
 
         (nameless-unpack-exp (expr body)
           (let ((val (reverse (expval->list (value-of expr nameless-env)))))
-            (value-of body (rec-extend-nameless-env val nameless-env))))
+            (value-of body (unpack-extend-nameless-env val nameless-env))))
 
         (else
          (eopl:error 'value-of
@@ -98,11 +106,27 @@
 
         )))
 
-  (define rec-extend-nameless-env
+  (define extend-nameless-env-rec
+    (lambda (p-body letrec-body nameless-env )
+      (let ((vec-p-name (make-vector 1))
+            (vec-b-var (make-vector 1)))
+        (let ((new-env
+               (extend-nameless-env vec-b-var
+                (extend-nameless-env vec-p-name nameless-env))))
+          (vector-set! vec-p-name 0
+                       (proc-val (procedure p-body  new-env)))
+                       
+                       ;(proc-val (procedure letrec-body new-env)))
+          (vector-set! vec-b-var 0
+                       (proc-val (procedure p-body new-env)))
+                       ;(value-of p-body new-env))
+          new-env))))
+
+  (define unpack-extend-nameless-env
     (lambda (lst env)
       (if (null? lst)
           env
-          (rec-extend-nameless-env
+          (unpack-extend-nameless-env
            (cdr lst)
            (extend-nameless-env (car lst) env)))))
 
@@ -117,7 +141,7 @@
   (define (eval-cond conditions actions env)
     (cond ((null? conditions)
            (bool-val #f))
-          ( (value-of (car conditions) env)
+          ((value-of (car conditions) env)
             (value-of (car actions) env))
           (else
            (eval-cond (cdr conditions) (cdr actions) env))))

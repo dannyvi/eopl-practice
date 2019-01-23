@@ -86,8 +86,11 @@
   ;; Page: 99
   (define nameless-environment?
     (lambda (x)
-      ((list-of expval?) x)))
+      ((list-of expval-or-vec?) x)))
 
+  (define expval-or-vec?
+    (lambda (x)
+      (or (expval? x) (vector? x))))
   ;; empty-nameless-env : () -> Nameless-env
   ;; Page: 99
   (define empty-nameless-env
@@ -109,6 +112,8 @@
    ;; Page: 99
    (define apply-nameless-env
      (lambda (nameless-env n)
-       (list-ref nameless-env n)))
+       (let ((val (list-ref nameless-env n)))
+         (if (expval? val) val (vector-ref val 0))
+         )))
 
 )
