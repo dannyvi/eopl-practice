@@ -62,15 +62,15 @@
                                  (value-of rand nameless-env)) rands) ))
                     (apply-procedure proc args)))
 
-        (nameless-var-exp (n)
+        (nameless-var-exp (n m)
                           (apply-nameless-env nameless-env n))
 
         (nameless-let-exp (exps body)
-                          (let ((vals (map
-                                       (lambda (exp1)
-                                         (value-of exp1 nameless-env)) exps)))
-                            (value-of body
-                                      (extend-nameless-env vals nameless-env))))
+          (let ((vals (map
+            (lambda (exp1)
+              (value-of exp1 nameless-env)) exps)))
+            (value-of body
+              (extend-nameless-env vals nameless-env))))
 
         (nameless-proc-exp (body)
                            (proc-val
