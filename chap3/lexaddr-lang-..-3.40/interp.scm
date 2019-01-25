@@ -75,7 +75,7 @@
           (let ((proc (expval->proc (value-of rator nameless-env)))
                 (arg (value-of rand nameless-env)))
             (display proc)
-            (display "\n")
+            (display "\n arg :")
             (display arg)
             (display "\n")
 	    (apply-procedure proc arg)))
@@ -89,7 +89,11 @@
               (extend-nameless-env val nameless-env))))
 
         (nameless-letrec-var-exp (expl body)
-          (value-of body (extend-nameless-env-rec expl body nameless-env)))
+          ;(let ((env (extend-nameless-env-rec expl nameless-env)))
+          ;  (let ((val (value-of expl env)))
+          ;    (value-of body (extend-nameless-env val env)))))
+
+          (value-of body (extend-nameless-env-rec expl nameless-env)))
 
 
         (nameless-proc-exp (body)
@@ -107,19 +111,16 @@
         )))
 
   (define extend-nameless-env-rec
-    (lambda (p-body letrec-body nameless-env )
+    (lambda (p-body nameless-env )
       (let ((vec-p-name (make-vector 1))
             (vec-b-var (make-vector 1)))
         (let ((new-env
                (extend-nameless-env vec-b-var
-                (extend-nameless-env vec-p-name nameless-env))))
+               (extend-nameless-env vec-p-name nameless-env))))
           (vector-set! vec-p-name 0
                        (proc-val (procedure p-body  new-env)))
-                       
-                       ;(proc-val (procedure letrec-body new-env)))
           (vector-set! vec-b-var 0
                        (proc-val (procedure p-body new-env)))
-                       ;(value-of p-body new-env))
           new-env))))
 
   (define unpack-extend-nameless-env

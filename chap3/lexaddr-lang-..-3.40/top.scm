@@ -24,8 +24,8 @@
   (define run
     (lambda (string)
       (value-of-translation
-	(translation-of-program
-	  (scan&parse string)))))
+       (translation-of-program
+        (scan&parse string)))))
 
   ;; run-all : () -> Unspecified
 

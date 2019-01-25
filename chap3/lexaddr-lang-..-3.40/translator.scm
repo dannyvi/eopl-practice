@@ -69,7 +69,8 @@
             (nameless-letrec-var-exp
              ;(nameless-proc-exp (translation-of p-body new-senv))
              (translation-of p-body new-senv)
-             (translation-of letrec-body new-senv)
+             ;(translation-of p-body new-senv)
+             (translation-of letrec-body  new-senv)
              )))
            ; (letrec-exp p-name b-var
            ;  (nameless-proc-exp (translation-of p-body new-senv))
