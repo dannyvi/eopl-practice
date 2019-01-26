@@ -36,12 +36,14 @@
           (nameless-var-exp
             (apply-senv senv var)))
         (let-exp (var exp1 body)
-          (nameless-let-exp
-            (translation-of exp1 senv)
-            (translation-of body
-              (extend-senv var senv))))
+          (translation-of (substitute-let-var var exp1 body) senv))
+          ;(nameless-let-exp
+          ;  (translation-of exp1 senv)
+          ;  (translation-of body
+          ;    (extend-senv var senv))))
         (proc-exp (var body)
           (let ((free-vars (free-vars-in (list var) body senv)))
+            (display free-vars)
             (nameless-proc-exp
              (translation-of body (cons var (map car free-vars)))
              (map cadr free-vars))))
@@ -108,38 +110,58 @@
   (define free-vars-in
     (lambda (bounds body senv)
       (cases expression body
+        (const-exp (num) '())
         (var-exp (var)
           (if (member var bounds)
               '()
-              (list (list var (- 1 (apply-senv senv var))))))
-        (zero?-exp (exp1) (free-vars-in bounds exp1))
+              (list (list var (- (apply-senv senv var) 0)))))
+        (zero?-exp (exp1) (free-vars-in bounds exp1 senv))
+        (diff-exp (exp1 exp2) (append (free-vars-in bounds exp1 senv)
+                                      (free-vars-in bounds exp2 senv)))
         (if-exp (exp1 exp2 exp3)
-                (append (free-vars-in bounds exp1)
-                        (free-vars-in bounds exp2)
-                        (free-vars-in bounds exp3)))
-        (let-exp (var exp1 body)
-                 (append (free-vars-in bounds exp1)
-                         (free-vars-in (cons var bounds) body)))
-        (proc-exp (var body) (free-vars-in (cons var bounds) body))
+                (append (free-vars-in bounds exp1 senv)
+                        (free-vars-in bounds exp2 senv)
+                        (free-vars-in bounds exp3 senv)))
+        (let-exp (var exp1 l-body)
+                 (append (free-vars-in bounds exp1 senv)
+                         (free-vars-in (cons var bounds) l-body senv)))
+        (proc-exp (var p-body) (free-vars-in (cons var bounds) p-body senv))
         (call-exp (rator rand)
-                  (append (free-vars-in bounds rator)
-                          (free-vars-in bounds rand)))
-        (else '()))))
+                  (append (free-vars-in bounds rator senv)
+                          (free-vars-in bounds rand senv)))
+        (else
+         (eopl:error 'translation-of "exp type mistake ~s" body)))))
 
-;  (define init-local-env
-;    (lambda (free-vars env)
-;      (if (null? free-vars)
-;          (empty-env)
-;          (bind-value (car free-vars) (init-local-env (cdr free-vars) env) env))))
-;
-;  (define bind-value
-;    (lambda (search-sym local-env env)
-;      (if (empty-env? env)
-;          local-env
-;          (let ((sym (extended-env-record->sym env))
-;                (val (extended-env-record->val env))
-;                (old-env (extended-env-record->old-env env)))
-;            (if (eqv? search-sym sym)
-;                (extend-env sym val local-env)
-;                (bind-value search-sym local-env old-env))))))
+
+  ;; exercises
+  ;; 3.43 substitute var for expression in the body of a let-expression
+  ;;      to get a direct proc that eliminates the environment lookup.
+
+  (define substitute-let-var
+    (lambda (l-var l-exp l-body )
+      (cases expression l-body
+        (const-exp (num) (const-exp num))
+        (var-exp (var) (if (eqv? var l-var) l-exp (var-exp var)))
+        (zero?-exp (exp1) (zero?-exp (substitute-let-var l-var l-exp exp1)))
+        (diff-exp (exp1 exp2) (diff-exp
+                               (substitute-let-var l-var l-exp exp1)
+                               (substitute-let-var l-var l-exp exp2)))
+        (if-exp (exp1 exp2 exp3) (if-exp
+                                  (substitute-let-var l-var l-exp exp1)
+                                  (substitute-let-var l-var l-exp exp2)
+                                  (substitute-let-var l-var l-exp exp3)))
+        (let-exp (var exp1 body)
+          (substitute-let-var
+            var (substitute-let-var l-var l-exp exp1) body))
+        (proc-exp (var p-body)
+          (if (eqv? var l-var)
+              (proc-exp var p-body)
+              (proc-exp var (substitute-let-var l-var l-exp p-body))))
+        (call-exp (rator rand)
+          (call-exp (substitute-let-var l-var l-exp rator)
+                    (substitute-let-var l-var l-exp rand)))
+        (else
+         (eopl:error "wrong expression of ~s" l-body))
+        )))
+
   )
