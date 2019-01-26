@@ -36,7 +36,8 @@
           (nameless-var-exp
             (apply-senv senv var)))
         (let-exp (var exp1 body)
-          (translation-of (substitute-let-var var exp1 body) senv))
+          (translation-of
+           (eliminate-proc-call (substitute-let-var var exp1 body)) senv))
           ;(nameless-let-exp
           ;  (translation-of exp1 senv)
           ;  (translation-of body
@@ -158,10 +159,22 @@
               (proc-exp var p-body)
               (proc-exp var (substitute-let-var l-var l-exp p-body))))
         (call-exp (rator rand)
-          (call-exp (substitute-let-var l-var l-exp rator)
-                    (substitute-let-var l-var l-exp rand)))
+          (call-exp
+            (substitute-let-var l-var l-exp rator)
+            (substitute-let-var l-var l-exp rand)))
         (else
          (eopl:error "wrong expression of ~s" l-body))
         )))
+
+  (define eliminate-proc-call
+    (lambda (expr)
+      (cases expression expr
+        (call-exp (rator rand)
+          (cases expression rator
+            (proc-exp (rator-var rator-body)
+              (substitute-let-var rator-var rand rator-body))
+            (else (call-exp rator rand))))
+        (else expr))))
+
 
   )
