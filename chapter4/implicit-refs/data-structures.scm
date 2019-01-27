@@ -19,6 +19,8 @@
       (proc proc?))
     (ref-val
       (ref reference?))
+    (list-val
+      (lst list?))
     )
 
 ;;; extractors:
@@ -56,14 +58,14 @@
 
   (define-datatype proc proc?
     (procedure
-      (bvar symbol?)
+      (bvar (list-of symbol?))
       (body expression?)
       (env environment?)))
 
   (define-datatype environment environment?
     (empty-env)
     (extend-env 
-      (bvar symbol?)
+      (bvar (lambda (var) (or (symbol? var) ((list-of symbol?) var))))
       (bval reference?)                 ; new for implicit-refs
       (saved-env environment?))
     (extend-env-rec*

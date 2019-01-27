@@ -46,7 +46,7 @@
          (eopl:error 'sloppy->expval 
                      "Can't convert sloppy value to expval: ~s"
                      sloppy-val)))))
-    
+
   ;; run-one : Sym -> ExpVal
   ;; (run-one sym) runs the test whose name is sym
   (define run-one
@@ -57,11 +57,24 @@
            => (lambda (test)
                 (run (cadr test))))
           (else (eopl:error 'run-one "no such test: ~s" test-name))))))
- 
+
   ;; (run-all)
-  
+
   )
 
 
+;; exercise 4.15
+;; environment bound to plain integers because it's bound to reference.
+;; the value of reference is the list-ref number of the value in the store.
+
+;; exercise 4.18
+;; rules of multiargument procedures 
+;;
+;;                  vars ∈ List
+;;-------------------------------------------------------------------------------
+;;  (value-of (proc-exp vars body) env )
+;;       = (proc-val (procedure '() body env))       #if (null? vars) = #t
+;;       | (value-of (proc-exp (reverse (cdr (reverse vars)))
+;;                          (proc-exp (last vars) body)) env)   # otherwise
 
 

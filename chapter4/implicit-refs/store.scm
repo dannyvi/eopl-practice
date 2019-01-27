@@ -1,14 +1,14 @@
 (module store (lib "eopl.ss" "eopl")
-  
+
   (require "drscheme-init.scm")
-  
+
   (provide initialize-store! reference? newref deref setref!
     instrument-newref get-store-as-list)
-  
+
   (define instrument-newref (make-parameter #f))
-  
+
   ;;;;;;;;;;;;;;;; references and the store ;;;;;;;;;;;;;;;;
-  
+
   ;;; world's dumbest model of the store:  the store is a list and a
   ;;; reference is number which denotes a position in the list.
 
@@ -20,7 +20,7 @@
   ;; Page: 111
   (define empty-store
     (lambda () '()))
-  
+
   ;; initialize-store! : () -> Sto
   ;; usage: (initialize-store!) sets the-store to the empty-store
   ;; Page 111
@@ -48,26 +48,26 @@
         (set! the-store
               (append the-store (list val)))
         (when (instrument-newref)
-            (eopl:printf 
+            (eopl:printf
              "newref: allocating location ~s with initial contents ~s~%"
-             next-ref val))                     
-        next-ref)))                     
+             next-ref val))
+        next-ref)))
 
   ;; deref : Ref -> ExpVal
   ;; Page 111
-  (define deref 
+  (define deref
     (lambda (ref)
       (list-ref the-store ref)))
 
   ;; setref! : Ref * ExpVal -> Unspecified
   ;; Page: 112
-  (define setref!                       
+  (define setref!
     (lambda (ref val)
       (set! the-store
         (letrec
           ((setref-inner
              ;; returns a list like store1, except that position ref1
-             ;; contains val. 
+             ;; contains val.
              (lambda (store1 ref1)
                (cond
                  ((null? store1)

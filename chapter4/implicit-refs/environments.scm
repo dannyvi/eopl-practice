@@ -29,9 +29,9 @@
         (empty-env ()
           (eopl:error 'apply-env "No binding for ~s" search-var))
         (extend-env (bvar bval saved-env)
-	  (if (eqv? search-var bvar)
-	    bval
-	    (apply-env saved-env search-var)))
+          (if (eqv? search-var bvar)
+              bval
+              (apply-env saved-env search-var)))
         (extend-env-rec* (p-names b-vars p-bodies saved-env)
           (let ((n (location search-var p-names)))
             ;; n : (maybe int)
