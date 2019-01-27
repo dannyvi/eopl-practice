@@ -19,8 +19,6 @@
       (proc proc?))
     (ref-val
       (ref reference?))
-    (list-val
-      (lst list?))
     )
 
 ;;; extractors:
@@ -65,7 +63,7 @@
   (define-datatype environment environment?
     (empty-env)
     (extend-env 
-      (bvar (lambda (var) (or (symbol? var) ((list-of symbol?) var))))
+      (bvar symbol?)
       (bval reference?)                 ; new for implicit-refs
       (saved-env environment?))
     (extend-env-rec*
