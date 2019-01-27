@@ -69,7 +69,7 @@
         (let-exp (var exp1 body)
           (let ((val1 (car (value-of exp1 env))))
             (value-of body
-              (extend-env var val1 env))))
+              (extend-env var val1 env)) ))
 
         (proc-exp (var body)
           (list (proc-val (procedure var body env)) the-store))
@@ -94,11 +94,11 @@
             (value-of-begins exp1 exps)))
 
         (newref-exp (exp1)
-          (let ((v1 (value-of exp1 env)))
+          (let ((v1 (car (value-of exp1 env))))
             (list (ref-val (newref v1)) the-store)))
 
         (deref-exp (exp1)
-          (let ((v1 (value-of exp1 env)))
+          (let ((v1 (car (value-of exp1 env))))
             (let ((ref1 (expval->ref v1)))
               (list (deref ref1) the-store))))
 
