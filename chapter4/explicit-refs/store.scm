@@ -7,7 +7,7 @@
                     in-range))
 
   (provide initialize-store! reference? newref deref setref!
-    instrument-newref get-store-as-list)
+    instrument-newref get-store-as-list the-store)
 
   (define instrument-newref (make-parameter #f))
 

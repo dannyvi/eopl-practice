@@ -36,15 +36,15 @@
       (cases expression exp
 
         ;\commentbox{ (value-of (const-exp \n{}) \r) = \n{}}
-        (const-exp (num) (num-val num))
+        (const-exp (num) (list (num-val num) the-store))
 
         ;\commentbox{ (value-of (var-exp \x{}) \r) = (apply-env \r \x{})}
-        (var-exp (var) (apply-env env var))
+        (var-exp (var) (list (apply-env env var) the-store))
 
         ;\commentbox{\diffspec}
         (diff-exp (exp1 exp2)
-          (let ((val1 (value-of exp1 env))
-                (val2 (value-of exp2 env)))
+          (let ((val1 (car (value-of exp1 env)))
+                (val2 (car (value-of exp2 env))))
             (let ((num1 (expval->num val1))
                   (num2 (expval->num val2)))
               (num-val
@@ -52,32 +52,32 @@
 
         ;\commentbox{\zerotestspec}
         (zero?-exp (exp1)
-          (let ((val1 (value-of exp1 env)))
+          (let ((val1 (car (value-of exp1 env))))
             (let ((num1 (expval->num val1)))
               (if (zero? num1)
-                (bool-val #t)
-                (bool-val #f)))))
+                (list (bool-val #t) the-store)
+                (list (bool-val #f) the-store)))))
 
         ;\commentbox{\ma{\theifspec}}
         (if-exp (exp1 exp2 exp3)
-          (let ((val1 (value-of exp1 env)))
+          (let ((val1 (car (value-of exp1 env))))
             (if (expval->bool val1)
-              (value-of exp2 env)
-              (value-of exp3 env))))
+              (list (value-of exp2 env) the-store)
+              (list (value-of exp3 env) the-store))))
 
         ;\commentbox{\ma{\theletspecsplit}}
         (let-exp (var exp1 body)
-          (let ((val1 (value-of exp1 env)))
+          (let ((val1 (car (value-of exp1 env))))
             (value-of body
               (extend-env var val1 env))))
 
         (proc-exp (var body)
-          (proc-val (procedure var body env)))
+          (list (proc-val (procedure var body env)) the-store))
 
         (call-exp (rator rand)
-          (let ((proc (expval->proc (value-of rator env)))
-                (arg (value-of rand env)))
-            (apply-procedure proc arg)))
+          (let ((proc (expval->proc (car (value-of rator env))))
+                (arg (car (value-of rand env))))
+            (list (apply-procedure proc arg) the-store)))
 
         (letrec-exp (p-names b-vars p-bodies letrec-body)
           (value-of letrec-body
@@ -89,25 +89,25 @@
                (lambda (e1 es)
                  (let ((v1 (value-of e1 env)))
                    (if (null? es)
-                     v1
+                     (list v1 the-store)
                      (value-of-begins (car es) (cdr es)))))))
             (value-of-begins exp1 exps)))
 
         (newref-exp (exp1)
           (let ((v1 (value-of exp1 env)))
-            (ref-val (newref v1))))
+            (list (ref-val (newref v1)) the-store)))
 
         (deref-exp (exp1)
           (let ((v1 (value-of exp1 env)))
             (let ((ref1 (expval->ref v1)))
-              (deref ref1))))
+              (list (deref ref1) the-store))))
 
         (setref-exp (exp1 exp2)
           (let ((ref (expval->ref (value-of exp1 env))))
             (let ((v2 (value-of exp2 env)))
               (begin
                 (setref! ref v2)
-                (num-val 23)))))
+                (list v2 the-store)))))
         )))
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
