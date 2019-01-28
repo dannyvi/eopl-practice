@@ -74,7 +74,7 @@
 
         (proc-exp (vars body)
            (proc-val (procedure vars body env))
-          )
+           )
           ;(if (null? (cdr vars)) (proc-val (procedure (car vars) body env))
           ;    (value-of (proc-exp (reverse (cdr (reverse vars)))
           ;                        (proc-exp (last vars) body) env))))
