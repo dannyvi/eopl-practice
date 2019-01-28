@@ -107,6 +107,17 @@
 
         )))
 
+  (define extend-env-rec*
+    (lambda (p-names b-vars p-bodies env)
+      (let ((p-vals (map (lambda (name) (newref 0)) p-names)))
+        (let ((new-env (extend-env* p-names p-vals env)))
+        (map
+         (lambda (ref vars body)
+           (setref! ref (proc-val (procedure vars body new-env))))
+         p-vals b-vars p-bodies)
+        new-env))
+      ))
+
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
   ;; Page: 119
@@ -148,6 +159,7 @@
                       (length vars) (length vals) vars vals))))
   ;; store->readable : Listof(List(Ref,Expval))
   ;;                    -> Listof(List(Ref,Something-Readable))
+  
   (define store->readable
     (lambda (l)
       (map
