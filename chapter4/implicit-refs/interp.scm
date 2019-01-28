@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;; switches for instrument-let ;;;;;;;;;;;;;;;;
 
-  (define instrument-let (make-parameter #t))
+  (define instrument-let (make-parameter #f))
 
   ;; say (instrument-let #t) to turn instrumentation on.
   ;;     (instrument-let #f) to turn it off again.
@@ -40,7 +40,8 @@
 
         ;\commentbox{ (value-of (var-exp \x{}) \r)
         ;              = (deref (apply-env \r \x{}))}
-        (var-exp (var) (deref (apply-env env var)))
+        (var-exp (var) (if (reference? var) (deref (apply-env env var))
+                           (apply-env env var)))
 
         ;\commentbox{\diffspec}
         (diff-exp (exp1 exp2)
@@ -66,8 +67,12 @@
               (value-of exp2 env)
               (value-of exp3 env))))
 
-        ;\commentbox{\ma{\theletspecsplit}}
         (let-exp (vars exps body)
+                        (let ((v1 (map (lambda (exp1) (value-of exp1 env)) exps)))
+                          (value-of body
+                                    (extend-env* vars v1 env))))
+        ;\commentbox{\ma{\theletspecsplit}}
+        (letmutable-exp (vars exps body)
           (let ((v1 (map (lambda (exp1) (newref (value-of exp1 env))) exps)))
             (value-of body
               (extend-env* vars v1 env))))
