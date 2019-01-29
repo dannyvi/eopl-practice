@@ -77,4 +77,9 @@
 ;;       | (value-of (proc-exp (reverse (cdr (reverse vars)))
 ;;                          (proc-exp (last vars) body)) env)   # otherwise
 
-
+;; exercise 4.22
+;;
+;; should use letmutable
+;; (run "letmutable x = 11
+;;       in let p = proc (y) -(y,x)
+;;          in -(setdynamic x = 17 during (p 22), (p 14))")
