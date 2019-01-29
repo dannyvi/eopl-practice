@@ -51,22 +51,30 @@
           (if (expval->bool (value-of expr env))
               (begin
                 (result-of stmt env)
-                (result-of (while-stmt expr stmt) env)
-                )
+                (result-of (while-stmt expr stmt) env))
               'end
               ))
-        (decl-stmt (vars stmt)
+
+        (dowhile-stmt (stmt expr)
+          (begin
+            (result-of stmt env)
+            (if (expval->bool (value-of expr env))
+                (result-of (dowhile-stmt stmt expr) env)
+                'end)))
+
+        (decl-stmt (vars exps stmt)
           (if (null? vars)
               (result-of stmt env)
-              (result-of (decl-stmt (cdr vars) stmt)
+              (result-of (decl-stmt (cdr vars) (cdr exps) stmt)
                          (extend-env (car vars)
-                                     (newref (num-val 0)) env))))
+                                     (newref
+                                      (value-of (car exps) env)) env))))
         (read-stmt (var)
           (let ((val (num-val (read)))
                 (ref (apply-env env var)))
             (setref! ref val)
             (pretty-print (get-store-as-list))
-                    ))
+            ))
         )))
 
 

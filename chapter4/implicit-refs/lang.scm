@@ -39,7 +39,12 @@
        while-stmt)
 
       (statement
-       ("var" (separated-list identifier "," ) ";" statement)
+       ("do" statement "while" expression)
+       dowhile-stmt)
+
+      (statement
+       ("var" (separated-list identifier "=" expression "," )
+        ";" statement)
        decl-stmt)
 
       (statement
