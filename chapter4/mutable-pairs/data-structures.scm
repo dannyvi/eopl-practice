@@ -4,25 +4,28 @@
   (require "store.scm")                 ; for reference?
 
   (require "pairvals.scm")
+  (require "arrval.rkt")
 
   (provide (all-defined-out))               ; too many things to list
 
 ;;;;;;;;;;;;;;;; expressed values ;;;;;;;;;;;;;;;;
 
 ;;; an expressed value is either a number, a boolean, a procval, or a
-;;; reference. 
+;;; reference.
 
   (define-datatype expval expval?
     (num-val
       (value number?))
     (bool-val
       (boolean boolean?))
-    (proc-val 
+    (proc-val
       (proc proc?))
     (ref-val
       (ref reference?))
     (mutpair-val
-      (p mutpair?))
+     (p mutpair?))
+    (arr-val
+      (arr array?))
     )
 
 ;;; extractors:
@@ -57,6 +60,12 @@
 	(mutpair-val (ref) ref)
 	(else (expval-extractor-error 'mutable-pair v)))))
 
+  (define expval->array
+    (lambda (v)
+      (cases expval v
+             (arr-val (ref) ref)
+             (else (expval-extractor-error 'mutable-pair v)))))
+
   (define expval-extractor-error
     (lambda (variant value)
       (eopl:error 'expval-extractors "Looking for a ~s, found ~s"
@@ -69,12 +78,12 @@
       (bvar symbol?)
       (body expression?)
       (env environment?)))
-  
+
 ;;;;;;;;;;;;;;;; environment data structures ;;;;;;;;;;;;;;;;
 
   (define-datatype environment environment?
     (empty-env)
-    (extend-env 
+    (extend-env
       (bvar symbol?)
       (bval reference?)                 ; new for implicit-refs
       (saved-env environment?))
@@ -93,7 +102,7 @@
 	(extend-env (sym val saved-env)
 	  (cons
 	    (list sym val)              ; val is a denoted value-- a
-                                        ; reference. 
+                                        ; reference.
 	    (env->list saved-env)))
 	(extend-env-rec* (p-names b-vars p-bodies saved-env)
 	  (cons
@@ -102,7 +111,7 @@
 
   ;; expval->printable : ExpVal -> List
   ;; returns a value like its argument, except procedures get cleaned
-  ;; up with env->list 
+  ;; up with env->list
   (define expval->printable
     (lambda (val)
       (cases expval val

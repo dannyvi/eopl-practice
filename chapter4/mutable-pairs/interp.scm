@@ -1,5 +1,5 @@
 (module interp (lib "eopl.ss" "eopl")
-  
+
   ;; interpreter for the MUTABLE-PAIRS language
 
   (require "drscheme-init.scm")
@@ -9,12 +9,13 @@
   (require "environments.scm")
   (require "store.scm")
   (require "pairvals.scm")
+  (require "arrval.rkt")
 
   (provide value-of-program value-of instrument-let instrument-newref)
 
 ;;;;;;;;;;;;;;;; switches for instrument-let ;;;;;;;;;;;;;;;;
 
-  (define instrument-let (make-parameter #f))
+  (define instrument-let (make-parameter #t))
 
   ;; say (instrument-let #t) to turn instrumentation on.
   ;;     (instrument-let #f) to turn it off again.
@@ -23,9 +24,9 @@
 
   ;; value-of-program : Program -> ExpVal
 
-  (define value-of-program 
+  (define value-of-program
     (lambda (pgm)
-      (initialize-store!)             
+      (initialize-store!)
       (cases program pgm
         (a-program (body)
           (value-of body (init-env))))))
@@ -49,25 +50,25 @@
 		    (value-of exp2 env))))
             (num-val
 	      (- val1 val2))))
-        
+
         (zero?-exp (exp1)
 	  (let ((val1 (expval->num (value-of exp1 env))))
 	    (if (zero? val1)
 	      (bool-val #t)
 	      (bool-val #f))))
 
-        (if-exp (exp0 exp1 exp2) 
+        (if-exp (exp0 exp1 exp2)
           (if (expval->bool (value-of exp0 env))
             (value-of exp1 env)
             (value-of exp2 env)))
 
 ;;; Uninstrumented version
-;;;         (let-exp (id rhs body)       
+;;;         (let-exp (id rhs body)
 ;;;           (let ((val (value-of rhs env)))
 ;;;             (value-of body
 ;;;               (extend-env id (newref val) env))))
 
-       (let-exp (var exp1 body)       
+       (let-exp (var exp1 body)
 	  (when (instrument-let)
 	    (eopl:printf "entering let ~s~%" var))
           (let ((val (value-of exp1 env)))
@@ -86,7 +87,7 @@
 	  (proc-val
 	    (procedure var body env)))
 
-        (call-exp (rator rand)          
+        (call-exp (rator rand)
           (let ((proc (expval->proc (value-of rator env)))
                 (arg  (value-of rand env)))
 	    (apply-procedure proc arg)))
@@ -96,7 +97,7 @@
             (extend-env-rec* p-names b-vars p-bodies env)))
 
         (begin-exp (exp1 exps)
-          (letrec 
+          (letrec
             ((value-of-begins
                (lambda (e1 es)
                  (let ((v1 (value-of e1 env)))
@@ -142,6 +143,22 @@
               (begin
                 (setright p v2)
                 (num-val 83)))))
+        (newarr-exp (exps)
+          (let ((vals (map (lambda (expr) (value-of expr env)) exps)))
+            (arr-val (make-array vals))))
+        (arrref-exp (exp1 exp2)
+          (let ((arr (expval->array (value-of exp1 env)))
+                (num (expval->num (value-of exp2 env))))
+            (array-ref arr num)))
+        (arrset-exp (exp1 exp2 exp3)
+          (let ((arr (expval->array (value-of exp1 env)))
+                (num (expval->num (value-of exp2 env)))
+                (val (value-of exp3 env)))
+            (array-set arr num val)
+            (num-val 99)
+            ))
+        (arrlen-exp (exp1)
+          (array-length (expval->array (value-of exp1 env))))
         )))
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
@@ -169,8 +186,8 @@
 		  (eopl:printf "~%")))
 	      (value-of body new-env)))))))
 
-  
-  ;; store->readable : Listof(List(Ref,Expval)) 
+
+  ;; store->readable : Listof(List(Ref,Expval))
   ;;                    -> Listof(List(Ref,Something-Readable))
   (define store->readable
     (lambda (l)
@@ -180,8 +197,8 @@
             (car p)
             (expval->printable (cadr p))))
         l)))
-  
-  )
-  
 
-  
+  )
+
+
+

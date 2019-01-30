@@ -28,7 +28,7 @@
 
       (statement
        ("{" (separated-list statement ";" ) "}")
-       block-stmt)
+       brace-stmt)
 
       (statement
        ("print" expression)
@@ -45,7 +45,7 @@
       (statement
        ("var" (separated-list identifier "=" expression "," )
         ";" statement)
-       decl-stmt)
+       block-stmt)
 
       (statement
        ("read" identifier)
@@ -78,6 +78,11 @@
       (expression
        ("proc" "(" (arbno identifier) ")" expression)
        proc-exp)
+
+      (expression
+       ("ifx" expression "then" expression "else" expression)
+       if-exp)
+
 
       (expression
        ("(" expression (arbno expression) ")")

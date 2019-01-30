@@ -41,11 +41,11 @@
             (if (expval->bool val)
                 (result-of true-stmt env)
                 (result-of false-stmt env))))
-        (block-stmt (stmts)
+        (brace-stmt (stmts)
           (if (null? stmts) 'succeed
               (begin
                 (result-of (car stmts) env)
-                (result-of (block-stmt (cdr stmts)) env))))
+                (result-of (brace-stmt (cdr stmts)) env))))
         (print-stmt (expr) (eopl:printf "~s" (value-of expr env)))
         (while-stmt (expr stmt)
           (if (expval->bool (value-of expr env))
@@ -62,10 +62,10 @@
                 (result-of (dowhile-stmt stmt expr) env)
                 'end)))
 
-        (decl-stmt (vars exps stmt)
+        (block-stmt (vars exps stmt)
           (if (null? vars)
               (result-of stmt env)
-              (result-of (decl-stmt (cdr vars) (cdr exps) stmt)
+              (result-of (block-stmt (cdr vars) (cdr exps) stmt)
                          (extend-env (car vars)
                                      (newref
                                       (value-of (car exps) env)) env))))
@@ -122,11 +122,11 @@
             (if val1 (bool-val #f) (bool-val #t))))
 
         ;\commentbox{\ma{\theifspec}}
-;        (if-exp (exp1 exp2 exp3)
-;          (let ((val1 (value-of exp1 env)))
-;            (if (expval->bool val1)
-;              (value-of exp2 env)
-;              (value-of exp3 env))))
+        (if-exp (exp1 exp2 exp3)
+          (let ((val1 (value-of exp1 env)))
+            (if (expval->bool val1)
+              (value-of exp2 env)
+              (value-of exp3 env))))
 
         (let-exp (vars exps body)
           (let ((v1 (map (lambda (exp1) (value-of exp1 env)) exps)))
