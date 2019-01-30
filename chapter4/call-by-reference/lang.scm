@@ -38,7 +38,11 @@
 
       (expression
        ("let" identifier "=" expression "in" expression)
-       let-exp)   
+       let-exp)
+
+      (expression
+       ("letref" identifier "=" expression "in" expression)
+       letref-exp) 
 
       (expression
        ("proc" "(" identifier ")" expression)
@@ -47,6 +51,11 @@
       (expression
        ("(" expression expression ")")
        call-exp)
+
+      (expression
+       ("[" expression expression "]")
+       callv-exp)
+
 
       (expression
         ("letrec"
