@@ -1,6 +1,6 @@
 (module interp (lib "eopl.ss" "eopl")
-  
-  ;; interpreter for the CALL-BY-NEED language.  
+
+  ;; interpreter for the CALL-BY-NEED language.
 
   (require "drscheme-init.scm")
 
@@ -18,9 +18,9 @@
 ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
 
   ;; value-of-program : Program -> ExpVal
-  (define value-of-program 
+  (define value-of-program
     (lambda (pgm)
-      (initialize-store!)             
+      (initialize-store!)
       (cases program pgm
         (a-program (body)
           (value-of body (init-env))))))
@@ -33,15 +33,22 @@
 
         (const-exp (num) (num-val num))
 
-        (var-exp (var) 
+        (var-exp (var)
           (let ((ref1 (apply-env env var)))
             (let ((w (deref ref1)))
               (if (expval? w)
                 w
                 (let ((v1 (value-of-thunk w)))
                   (begin
-                    (setref! ref1 v1)   
+                    (setref! ref1 v1)
                     v1))))))
+
+;        (var-exp (var)
+;                 (let ((ref1 (apply-env env var)))
+;                   (let ((w (deref ref1)))
+;                     (if (expval? w)
+;                         w
+;                         (value-of-thunk w)))))
 
         (diff-exp (exp1 exp2)
           (let ((val1
@@ -52,28 +59,33 @@
 		    (value-of exp2 env))))
             (num-val
 	      (- val1 val2))))
-        
+
         (zero?-exp (exp1)
 	  (let ((val1 (expval->num (value-of exp1 env))))
 	    (if (zero? val1)
 	      (bool-val #t)
 	      (bool-val #f))))
 
-        (if-exp (exp0 exp1 exp2) 
+        (if-exp (exp0 exp1 exp2)
           (if (expval->bool (value-of exp0 env))
             (value-of exp1 env)
             (value-of exp2 env)))
 
-        (let-exp (var exp1 body)       
+        (let-exp (var exp1 body)
           (let ((val (value-of exp1 env)))
             (value-of body
-              (extend-env var (newref val) env))))
+                      (extend-env var (newref val) env))))
+
+        (let-need-exp (var exp1 body)
+                 (let ((val (value-of-operand exp1 env)))
+                   (value-of body
+                             (extend-env var val env))))
 
         (proc-exp (var body)
 	  (proc-val
 	    (procedure var body env)))
 
-        (call-exp (rator rand)          
+        (call-exp (rator rand)
           (let ((proc (expval->proc (value-of rator env)))
                 (arg  (value-of-operand rand env)))
 	    (apply-procedure proc arg)))
@@ -83,7 +95,7 @@
             (extend-env-rec* p-names b-vars p-bodies env)))
 
         (begin-exp (exp1 exps)
-          (letrec 
+          (letrec
             ((value-of-begins
                (lambda (e1 es)
                  (let ((v1 (value-of e1 env)))
@@ -146,6 +158,8 @@
     (lambda (exp env)
       (cases expression exp
         (var-exp (var) (apply-env env var)) ; no deref!
+        (const-exp (num) (newref (num-val num)))
+     ;   (proc-exp (var body) (newref (value-of exp env)))
         (else
           (newref (a-thunk exp env))))))
 
@@ -156,12 +170,14 @@
         (a-thunk (exp1 saved-env)
           (value-of exp1 saved-env)))))
 
+
+
   )
-  
-        
-        
-        
-        
 
 
-  
+
+
+
+
+
+

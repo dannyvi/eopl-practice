@@ -67,3 +67,5 @@
 
 
 
+
+(run "let a = 3 in let b = 4 in let swap = proc (x) proc (y) let temp = deref(x) in begin  setref(x,deref(y)); setref(y,temp) end in begin ((swap ref a) ref b); -(a,b) end ")

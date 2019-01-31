@@ -9,6 +9,7 @@
   (require "environments.scm")
   (require "store.scm")
   (require "pairvals.scm")
+  (require "arrval.rkt")
 
   (provide value-of-program value-of instrument-let instrument-newref)
 
@@ -155,6 +156,22 @@
               (begin
                 (setright p v2)
                 (num-val 83)))))
+
+        (newarr-exp (exps)
+          (arr-val (make-array
+                    (map (lambda (exp) (value-of exp env)) exps))))
+
+        (arrref-exp (exp1 exp2)
+          (let ((arr (expval->array (value-of exp1 env)))
+                (num (expval->num (value-of exp2 env))))
+            (array-ref arr num)))
+
+        (arrset-exp (exp1 exp2 exp3)
+          (let ((arr (expval->array (value-of exp1 env)))
+                (num (expval->num (value-of exp2 env)))
+                (val (value-of exp3 env)))
+            (array-set arr num val)
+            (num-val 99)))
 
         )))
 

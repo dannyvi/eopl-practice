@@ -42,6 +42,11 @@
        let-exp)   
 
       (expression
+       ("letn" identifier "=" expression "in" expression)
+       let-need-exp)   
+
+
+      (expression
        ("proc" "(" identifier ")" expression)
        proc-exp)
 

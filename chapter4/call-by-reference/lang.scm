@@ -91,6 +91,18 @@
         ("setright" expression "=" expression)
         setright-exp)
 
+      (expression
+       ("newarray" "(" (separated-list expression ",") ")")
+       newarr-exp)
+
+      (expression
+       ("arrayref" "(" expression "," expression ")")
+       arrref-exp)
+
+      (expression
+       ("arrayset" "(" expression "," expression "," expression")")
+       arrset-exp)
+
       ))
 
   ;;;;;;;;;;;;;;;; sllgen boilerplate ;;;;;;;;;;;;;;;;

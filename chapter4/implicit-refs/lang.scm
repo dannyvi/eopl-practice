@@ -76,6 +76,10 @@
        let-exp)
 
       (expression
+       ("ref" identifier)
+       ref-exp)
+
+      (expression
        ("proc" "(" (arbno identifier) ")" expression)
        proc-exp)
 

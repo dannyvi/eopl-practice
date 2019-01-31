@@ -92,6 +92,7 @@
         (var-exp (var) (let ((val (apply-env env var)))
                          (if (reference? val) (deref val) val)))
 
+        (ref-exp (var) (apply-env env var))
         ;\commentbox{\diffspec}
         (diff-exp (exp1 exp2)
           (let ((val1 (value-of exp1 env))
@@ -132,6 +133,8 @@
           (let ((v1 (map (lambda (exp1) (value-of exp1 env)) exps)))
             (value-of body
                       (extend-env* vars v1 env))))
+
+
         ;\commentbox{\ma{\theletspecsplit}}
         (letmutable-exp (vars exps body)
           (let ((v1 (map (lambda (exp1) (newref (value-of exp1 env))) exps)))
