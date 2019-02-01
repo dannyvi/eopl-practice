@@ -2,6 +2,8 @@
 
   (require "lang.scm")                  ; for expression?
 
+  (require "store.scm")
+
   (provide (all-defined-out))               ; too many things to list
 
 ;;;;;;;;;;;;;;;; expressed values ;;;;;;;;;;;;;;;;
@@ -16,7 +18,10 @@
     (list-val
      (leest leest?))
     (proc-val
-      (proc proc?)))
+     (proc proc?))
+    (ref-val
+     (ref reference?))
+    )
 
 ;;; extractors:
 
@@ -38,6 +43,11 @@
              (list-val (bool) bool)
              (else (expval-extractor-error 'leest v)))))
 
+  (define expval->ref
+    (lambda (v)
+      (cases expval v
+             (ref-val (ref) ref)
+             (else (expval-extractor-error 'reference v)))))
   (define expval->proc
     (lambda (v)
       (cases expval v
@@ -79,7 +89,7 @@
       (saved-cont continuation?))
     (let2-2-cont
       (var1 identifier?)
-      (val1 expval?)
+      (val1 reference?)
       (var2 identifier?)
       (body expression?)
       (saved-env environment?)
@@ -140,7 +150,7 @@
     (empty-env)
     (extend-env 
       (bvar symbol?)
-      (bval expval?)
+      (bval reference?)
       (saved-env environment?))
     (extend-env-rec
       (p-name symbol?)

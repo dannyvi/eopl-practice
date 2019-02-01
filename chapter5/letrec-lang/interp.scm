@@ -11,6 +11,7 @@
   (require "drscheme-init.scm")
 
   (require "lang.scm")
+  (require "store.scm")
   (require "data-structures.scm")
   (require "environments.scm")
 
@@ -22,6 +23,7 @@
   ;; Page: 143 and 154
   (define value-of-program 
     (lambda (pgm)
+      (initialize-store!)
       (cases program pgm
         (a-program (exp1)
           (value-of/k exp1 (init-env) (end-cont))))))  
@@ -32,7 +34,7 @@
     (lambda (exp env cont)
       (cases expression exp
         (const-exp (num) (apply-cont cont (num-val num)))
-        (var-exp (var) (apply-cont cont (apply-env env var)))
+        (var-exp (var) (apply-cont cont (deref (apply-env env var))))
         (proc-exp (vars body)
           (apply-cont cont 
             (proc-val (procedure vars body env))))
@@ -93,26 +95,27 @@
               (zero? (expval->num val)))))
         (let-exp-cont (var body saved-env saved-cont)
           (value-of/k body
-                      (extend-env var val saved-env) saved-cont))
+                      (extend-env var
+                                  (newref val) saved-env) saved-cont))
 
         (letm-cont (vars vals exps body saved-env saved-cont)
           (if (null? exps)
               (value-of/k body
-                          (extend-env* vars (cons val vals) saved-env)
+                          (extend-env* vars (cons (newref val) vals) saved-env)
                           saved-cont)
               (value-of/k (car exps) saved-env
-                (letm-cont vars (cons val vals)
+                (letm-cont vars (cons (newref val) vals)
                            (cdr exps) body saved-env saved-cont))
               ))
 
         (let2-1-cont (var1 var2 exp2 body s-env saved-cont)
           (value-of/k exp2 s-env
-           (let2-2-cont var1 val var2 body s-env saved-cont)))
+           (let2-2-cont var1 (newref val) var2 body s-env saved-cont)))
 
         (let2-2-cont (var1 val1 var2 body s-env saved-cont)
           (value-of/k body
             (extend-env var1 val1
-              (extend-env var2 val s-env)) saved-cont))
+              (extend-env var2 (newref val) s-env)) saved-cont))
 
         (if-test-cont (exp2 exp3 saved-env saved-cont)
           (if (expval->bool val)
@@ -169,7 +172,7 @@
       (cases proc proc1
         (procedure (vars body saved-env)
           (value-of/k body
-            (extend-env* vars args saved-env)
+            (extend-env* vars (map newref args) saved-env)
             cont)))))
 
   (define extend-env*
