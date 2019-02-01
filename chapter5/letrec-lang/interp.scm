@@ -253,6 +253,37 @@
 
         )))
 
+
+;  (define apply-cont
+;    (lambda (cont val saved-env)
+;      (if (null? cont) val
+;        (let ((op (caar cont))
+;              (args (cdar cont))
+;              (saved-cont (cdr cont)))
+;          (cond
+;           [(eqv? op 'zero1-cont)
+;            (apply-cont saved-cont
+;                        (bool-val
+;                         (zero? (expval->num val))) saved-env)]
+;           [(eqv? op 'let-exp-cont)
+;            (value-of/k (cadr args) (extend-env (car args) (newref val) saved-env) saved-cont)]
+;           [(eqv? op 'letm-cont)
+;            (if (null? (third args))
+;                (value-of/k
+;                 (fourth args)
+;                 (extend-env*
+;                  (first args)
+;                  (cons (newref val)
+;                        (second args)) saved-env) saved-cont)
+;                (letm-cont
+;                 (first args)
+;                 (cons (newref val) (second args))
+;                 (cdr (third args)) (fourth args) saved-cont))]
+;           [(eqv? op 'let2-1-cont )]
+;           )
+;          ))
+;      )
+;    )
   ;; apply-procedure/k : Proc * ExpVal * Cont -> FinalAnswer
   ;; Page 152 and 155
   (define apply-procedure/k
