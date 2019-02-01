@@ -64,6 +64,12 @@
         (car-exp (exp1) (value-of/k exp1 env (car-cont cont)))
         (cdr-exp (exp1) (value-of/k exp1 env (cdr-cont cont)))
         (null?-exp (exp1) (value-of/k exp1 env  (null?-cont cont)))
+        (list-exp (exprs)
+          (let ((exps (reverse exprs)))
+            (if (null? exps)
+              (apply-cont cont (list-val (empty-leest)))
+              (value-of/k (car exps) env
+                (list-cont (empty-leest) (cdr exps) env cont)))))
    )))
 
   ;; apply-cont : Cont * ExpVal -> FinalAnswer
@@ -124,6 +130,12 @@
         (null?-cont (saved-cont)
           (apply-cont saved-cont
                       (bool-val (null?-leest (expval->leest val)))))
+        (list-cont (vals exps env cont)
+          (if (null? exps)
+              (apply-cont cont (list-val (cons-leest val vals)))
+              (value-of/k (car exps) env
+               (list-cont (cons-leest val vals) (cdr exps) env cont))))
+        
         )))
 
   ;; apply-procedure/k : Proc * ExpVal * Cont -> FinalAnswer

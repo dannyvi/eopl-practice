@@ -66,6 +66,10 @@
        null?-exp)
 
       (expression
+       ("list" "(" (separated-list expression ",") ")")
+       list-exp)
+
+      (expression
        ("proc" "(" identifier ")" expression)
        proc-exp)
 

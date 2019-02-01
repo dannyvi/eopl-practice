@@ -109,6 +109,11 @@
       (saved-cont continuation?))
     (null?-cont
       (saved-cont continuation?))
+    (list-cont
+      (vals leest?)
+      (exps (list-of expression?))
+      (env environment?)
+      (cont continuation?))
     )
 
 ;;;;;;;;;;;;;;;; procedures ;;;;;;;;;;;;;;;;
