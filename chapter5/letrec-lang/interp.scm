@@ -33,9 +33,9 @@
       (cases expression exp
         (const-exp (num) (apply-cont cont (num-val num)))
         (var-exp (var) (apply-cont cont (apply-env env var)))
-        (proc-exp (var body)
+        (proc-exp (vars body)
           (apply-cont cont 
-            (proc-val (procedure var body env))))
+            (proc-val (procedure vars body env))))
         (letrec-exp (p-name b-var p-body letrec-body)
           (value-of/k letrec-body
             (extend-env-rec p-name b-var p-body env)
@@ -59,9 +59,9 @@
         (diff-exp (exp1 exp2)
           (value-of/k exp1 env
             (diff1-cont exp2 env cont)))        
-        (call-exp (rator rand) 
+        (call-exp (rator rands) 
           (value-of/k rator env
-                      (rator-cont rand env cont)))
+                      (rator-cont (reverse rands) env cont)))
 
         (emptylist-exp () (apply-cont cont (list-val (empty-leest))))
         (cons-exp (exp1 exp2) (value-of/k exp1 env (cons-cont exp2 env cont)))
@@ -126,12 +126,21 @@
                 (num2 (expval->num val)))
             (apply-cont saved-cont
               (num-val (- num1 num2)))))
-        (rator-cont (rand saved-env saved-cont)
-          (value-of/k rand saved-env
-            (rand-cont val saved-cont)))
-        (rand-cont (val1 saved-cont)
-          (let ((proc (expval->proc val1)))
-            (apply-procedure/k proc val saved-cont)))
+        (rator-cont (rands saved-env saved-cont)
+          (value-of/k (car rands) saved-env
+            (rand-cont val (cdr rands) '() saved-env saved-cont)))
+        (rand-cont (rator-val rands rand-vals saved-env saved-cont)
+          (if (null? rands)
+              (apply-procedure/k (expval->proc rator-val)
+                                 (cons val rand-vals)
+                                 saved-cont)
+              (value-of/k (car rands) saved-env
+                (rand-cont rator-val
+                           (cdr rands) (cons val rand-vals)
+                           saved-env saved-cont)))
+                   )
+          ;(let ((proc (expval->proc val1)))
+          ;  (apply-procedure/k proc val saved-cont)))
         (cons-cont (exp2 saved-env saved-cont)
           (value-of/k exp2 saved-env (cons2-cont val saved-cont)))
         (cons2-cont (val1 saved-cont)
@@ -156,11 +165,11 @@
   ;; apply-procedure/k : Proc * ExpVal * Cont -> FinalAnswer
   ;; Page 152 and 155
   (define apply-procedure/k
-    (lambda (proc1 arg cont)
+    (lambda (proc1 args cont)
       (cases proc proc1
-        (procedure (var body saved-env)
+        (procedure (vars body saved-env)
           (value-of/k body
-            (extend-env var arg saved-env)
+            (extend-env* vars args saved-env)
             cont)))))
 
   (define extend-env*
