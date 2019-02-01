@@ -41,6 +41,31 @@
        let-exp)   
 
       (expression
+       ("let2" identifier "=" expression
+        identifier "=" expression "in" expression)
+       let2-exp)
+
+      (expression
+       ("emptylist")
+       emptylist-exp)
+
+      (expression
+       ("cons" "(" expression "," expression ")")
+       cons-exp)
+
+      (expression
+       ("car" "(" expression ")")
+       car-exp)
+
+      (expression
+       ("cdr" "(" expression ")")
+       cdr-exp)
+
+      (expression
+       ("null?" "(" expression ")")
+       null?-exp)
+
+      (expression
        ("proc" "(" identifier ")" expression)
        proc-exp)
 

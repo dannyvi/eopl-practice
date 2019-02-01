@@ -12,8 +12,10 @@
     (num-val
       (value number?))
     (bool-val
-      (boolean boolean?))
-    (proc-val 
+     (boolean boolean?))
+    (list-val
+     (leest leest?))
+    (proc-val
       (proc proc?)))
 
 ;;; extractors:
@@ -29,6 +31,12 @@
       (cases expval v
 	(bool-val (bool) bool)
 	(else (expval-extractor-error 'bool v)))))
+
+  (define expval->leest
+    (lambda (v)
+      (cases expval v
+             (list-val (bool) bool)
+             (else (expval-extractor-error 'leest v)))))
 
   (define expval->proc
     (lambda (v)
@@ -55,6 +63,20 @@
       (body expression?)
       (saved-env environment?)
       (saved-cont continuation?))
+    (let2-1-cont
+      (var1 identifier?)
+      (var2 identifier?)
+      (exp2 expression?)
+      (body expression?)
+      (saved-env environment?)
+      (saved-cont continuation?))
+    (let2-2-cont
+      (var1 identifier?)
+      (val1 expval?)
+      (var2 identifier?)
+      (body expression?)
+      (saved-env environment?)
+      (saved-cont continuation?))
     (if-test-cont 
       (exp2 expression?)
       (exp3 expression?)
@@ -73,7 +95,21 @@
       (saved-cont continuation?))
     (rand-cont             
       (val1 expval?)
-      (saved-cont continuation?)))
+      (saved-cont continuation?))
+    (cons-cont
+      (exp2 expression?)
+      (saved-env environment?)
+      (saved-cont continuation?))
+    (cons2-cont
+      (val1 expval?)
+      (saved-cont continuation?))
+    (car-cont
+      (saved-cont continuation?))
+    (cdr-cont
+      (saved-cont continuation?))
+    (null?-cont
+      (saved-cont continuation?))
+    )
 
 ;;;;;;;;;;;;;;;; procedures ;;;;;;;;;;;;;;;;
 
@@ -96,5 +132,37 @@
       (b-var symbol?)
       (p-body expression?)
       (saved-env environment?)))
+
+
+
+;;
+
+  (define-datatype leest leest?
+    (empty-leest)
+    (cons-leest
+     (car-val expval?)
+     (cdr-val leest?)))
+  
+                                        ;(define cons-leest
+                                        ;  (lambda (val1 val2)
+                                        ;    (cons-leest val1 val2)))
+  
+  (define car-leest
+    (lambda (val)
+      (cases leest val
+             (empty-leest () (eopl:error 'car "emptylist!"))
+             (cons-leest (car-val cdr-val) car-val))))
+  
+  (define cdr-leest
+    (lambda (val)
+      (cases leest val
+             (empty-leest () (eopl:error 'car "emptylist!"))
+             (cons-leest (car-val cdr-val) cdr-val))))
+  
+  (define null?-leest
+    (lambda (val)
+      (cases leest val
+           (empty-leest () #t)
+           (cons-leest (carv cdrv) #f))))
 
 )
