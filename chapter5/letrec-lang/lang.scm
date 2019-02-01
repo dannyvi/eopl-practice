@@ -38,7 +38,11 @@
 
       (expression
        ("let" identifier "=" expression "in" expression)
-       let-exp)   
+       let-exp)
+
+      (expression
+       ("letm" (arbno identifier "=" expression) "in" expression)
+       letm-exp)
 
       (expression
        ("let2" identifier "=" expression

@@ -63,6 +63,13 @@
       (body expression?)
       (saved-env environment?)
       (saved-cont continuation?))
+    (letm-cont
+      (vars (list-of identifier?))
+      (vals list?)
+      (exps (list-of expression?))
+      (body expression?)
+      (saved-env environment?)
+      (saved-cont continuation?))
     (let2-1-cont
       (var1 identifier?)
       (var2 identifier?)

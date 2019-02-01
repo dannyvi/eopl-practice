@@ -45,7 +45,11 @@
             (zero1-cont cont)))
         (let-exp (var exp1 body)
           (value-of/k exp1 env
-            (let-exp-cont var body env cont)))
+                      (let-exp-cont var body env cont)))
+        (letm-exp (vars exprs body)
+          (let ((exps (reverse exprs)))
+            (value-of/k (car exps) env
+              (letm-cont vars '() (cdr exps) body env cont))))
         (let2-exp (var1 exp1 var2 exp2 body)
           (value-of/k exp1 env
             (let2-1-cont var1 var2 exp2 body env cont)))
@@ -89,7 +93,17 @@
               (zero? (expval->num val)))))
         (let-exp-cont (var body saved-env saved-cont)
           (value-of/k body
-            (extend-env var val saved-env) saved-cont))
+                      (extend-env var val saved-env) saved-cont))
+
+        (letm-cont (vars vals exps body saved-env saved-cont)
+          (if (null? exps)
+              (value-of/k body
+                          (extend-env* vars (cons val vals) saved-env)
+                          saved-cont)
+              (value-of/k (car exps) saved-env
+                (letm-cont vars (cons val vals)
+                           (cdr exps) body saved-env saved-cont))
+              ))
 
         (let2-1-cont (var1 var2 exp2 body s-env saved-cont)
           (value-of/k exp2 s-env
@@ -130,12 +144,13 @@
         (null?-cont (saved-cont)
           (apply-cont saved-cont
                       (bool-val (null?-leest (expval->leest val)))))
-        (list-cont (vals exps env cont)
+        (list-cont (vals exps saved-env saved-cont)
           (if (null? exps)
-              (apply-cont cont (list-val (cons-leest val vals)))
-              (value-of/k (car exps) env
-               (list-cont (cons-leest val vals) (cdr exps) env cont))))
-        
+              (apply-cont saved-cont (list-val (cons-leest val vals)))
+              (value-of/k (car exps) saved-env
+                (list-cont (cons-leest val vals)
+                           (cdr exps) saved-env saved-cont))))
+
         )))
 
   ;; apply-procedure/k : Proc * ExpVal * Cont -> FinalAnswer
@@ -147,6 +162,13 @@
           (value-of/k body
             (extend-env var arg saved-env)
             cont)))))
+
+  (define extend-env*
+    (lambda (vars vals env)
+      (if (null? vars) env
+          (extend-env* (cdr vars) (cdr vals)
+            (extend-env (car vars) (car vals) env)))))
+
   )
 
 
