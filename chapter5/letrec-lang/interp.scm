@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define instrument-all (make-parameter #t))
+  (define instrument-all (make-parameter #f))
 
 
 ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
@@ -46,9 +46,9 @@
         (proc-exp (vars body)
           (apply-cont cont 
             (proc-val (procedure vars body env)) env))
-        (letrec-exp (p-name b-var p-body letrec-body)
+        (letrec-exp (p-name b-vars p-body letrec-body)
           (value-of/k letrec-body
-            (extend-env-rec p-name b-var p-body env)
+            (extend-env-rec p-name b-vars p-body env)
             cont))
         (zero?-exp (exp1)
           (value-of/k exp1 env
@@ -68,7 +68,9 @@
             (if-test-cont exp2 exp3 cont)))
         (diff-exp (exp1 exp2)
           (value-of/k exp1 env
-            (diff1-cont exp2 cont)))        
+                      (diff1-cont exp2 cont)))
+        (multiply-exp (exp1 exp2)
+          (value-of/k exp1 env (multiply1-cont exp2 cont)))
         (call-exp (rator rands) 
           (value-of/k rator env
                       (rator-cont (reverse rands) cont)))
@@ -141,7 +143,15 @@
           (let ((num1 (expval->num val1))
                 (num2 (expval->num val)))
             (apply-cont saved-cont
-              (num-val (- num1 num2)) saved-env)))
+                        (num-val (- num1 num2)) saved-env)))
+        (multiply1-cont (exp2 saved-cont)
+           (value-of/k exp2
+             saved-env (multiply2-cont val saved-cont)))
+        (multiply2-cont (val1 saved-cont)
+           (let ((num1 (expval->num val1))
+                          (num2 (expval->num val)))
+                      (apply-cont saved-cont
+                                  (num-val (* num1 num2)) saved-env)))
         (rator-cont (rands saved-cont)
           (value-of/k (car rands) saved-env
             (rand-cont val (cdr rands) '() saved-cont)))

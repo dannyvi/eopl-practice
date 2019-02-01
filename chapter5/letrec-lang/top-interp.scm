@@ -62,3 +62,9 @@
   )
 
 
+;; exercise 5.13
+
+;; (run "letrec fact (n) = if zero?(n) then 1 else *(n, (fact -(n, 1))) in (fact 4)")
+
+;;(run "letrec fact-iter (n iter) = if zero?(n) then iter else (fact-iter -(n, 1) *(n, iter)) in (fact-iter 4 1)")
+

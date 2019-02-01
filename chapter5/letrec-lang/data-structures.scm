@@ -100,6 +100,12 @@
     (diff2-cont                
       (val1 expval?)
       (saved-cont continuation?))
+    (multiply1-cont                
+     (exp2 expression?)
+     (saved-cont continuation?))
+    (multiply2-cont                
+     (val1 expval?)
+     (saved-cont continuation?))
     (rator-cont            
       (rands (list-of expression?))
       (saved-cont continuation?))
@@ -147,7 +153,7 @@
       (saved-env environment?))
     (extend-env-rec
       (p-name symbol?)
-      (b-var symbol?)
+      (b-vars (list-of symbol?))
       (p-body expression?)
       (saved-env environment?)))
 

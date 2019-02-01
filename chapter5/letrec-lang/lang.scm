@@ -25,6 +25,10 @@
       (expression
         ("-" "(" expression "," expression ")")
         diff-exp)
+
+      (expression
+       ("*" "(" expression "," expression ")")
+       multiply-exp)
       
       (expression
        ("zero?" "(" expression ")")
@@ -83,7 +87,7 @@
 
       (expression
         ("letrec"
-          identifier "(" identifier ")" "=" expression
+          identifier "(" (arbno identifier) ")" "=" expression
            "in" expression)
         letrec-exp)
 
