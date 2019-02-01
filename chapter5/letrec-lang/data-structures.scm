@@ -124,6 +124,9 @@
       (vals leest?)
       (exps (list-of expression?))
       (cont continuation?))
+    (begin-cont
+      (exps (list-of expression?))
+      (cont continuation?))
     )
 
 ;;;;;;;;;;;;;;;; procedures ;;;;;;;;;;;;;;;;

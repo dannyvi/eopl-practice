@@ -86,7 +86,11 @@
           identifier "(" identifier ")" "=" expression
            "in" expression)
         letrec-exp)
-      
+
+      (expression
+       ("begin" expression (arbno ";" expression) "end")
+       begin-exp)
+
       ))
 
   ;;;;;;;;;;;;;;;; sllgen boilerplate ;;;;;;;;;;;;;;;;

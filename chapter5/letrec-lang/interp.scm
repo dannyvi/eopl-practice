@@ -77,7 +77,9 @@
             (if (null? exps)
               (apply-cont cont (list-val (empty-leest)) env)
               (value-of/k (car exps) env
-                (list-cont (empty-leest) (cdr exps) cont)))))
+                          (list-cont (empty-leest) (cdr exps) cont)))))
+        (begin-exp (exp1 exps)
+          (value-of/k exp1 env (begin-cont exps cont)))
    )))
 
   ;; apply-cont : Cont * ExpVal -> FinalAnswer
@@ -169,6 +171,10 @@
               (value-of/k (car exps) saved-env
                 (list-cont (cons-leest val vals)
                            (cdr exps) saved-cont))))
+        (begin-cont (exps cont)
+          (if (null? exps) val
+              (value-of/k (car exps) saved-env
+                          (begin-cont (cdr exps) cont))))
 
         )))
 
