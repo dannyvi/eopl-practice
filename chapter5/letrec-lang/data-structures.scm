@@ -71,54 +71,45 @@
     (let-exp-cont
       (var identifier?)
       (body expression?)
-      (saved-env environment?)
       (saved-cont continuation?))
     (letm-cont
       (vars (list-of identifier?))
       (vals list?)
       (exps (list-of expression?))
       (body expression?)
-      (saved-env environment?)
       (saved-cont continuation?))
     (let2-1-cont
       (var1 identifier?)
       (var2 identifier?)
       (exp2 expression?)
       (body expression?)
-      (saved-env environment?)
       (saved-cont continuation?))
     (let2-2-cont
       (var1 identifier?)
       (val1 reference?)
       (var2 identifier?)
       (body expression?)
-      (saved-env environment?)
       (saved-cont continuation?))
     (if-test-cont 
       (exp2 expression?)
       (exp3 expression?)
-      (saved-env environment?)
       (saved-cont continuation?))
     (diff1-cont                
       (exp2 expression?)
-      (saved-env environment?)
       (saved-cont continuation?))
     (diff2-cont                
       (val1 expval?)
       (saved-cont continuation?))
     (rator-cont            
       (rands (list-of expression?))
-      (saved-env environment?)
       (saved-cont continuation?))
     (rand-cont             
       (val1 expval?)
       (rands list?)
       (rands-val (list-of expval?))
-      (saved-env environment?)
       (saved-cont continuation?))
     (cons-cont
       (exp2 expression?)
-      (saved-env environment?)
       (saved-cont continuation?))
     (cons2-cont
       (val1 expval?)
@@ -132,7 +123,6 @@
     (list-cont
       (vals leest?)
       (exps (list-of expression?))
-      (env environment?)
       (cont continuation?))
     )
 
