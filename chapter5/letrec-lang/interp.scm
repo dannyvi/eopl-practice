@@ -17,6 +17,11 @@
 
   (provide value-of-program value-of/k)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define instrument-all (make-parameter #t))
+
+
 ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
 
   ;; value-of-program : Program -> FinalAnswer
@@ -32,6 +37,8 @@
   ;; Page: 143--146, and 154
   (define value-of/k
     (lambda (exp env cont)
+      (when (instrument-all)
+       (eopl:printf "~n~n(value-of/k ~n ~a ~n ~a ~n ~a)" exp env cont))
       (cases expression exp
         (const-exp (num) (apply-cont cont (num-val num) env))
         (var-exp (var) (apply-cont cont
@@ -86,6 +93,8 @@
   ;; Page: 148
   (define apply-cont
     (lambda (cont val saved-env)
+      (when (instrument-all)
+       (eopl:printf "~n~n(apply-cont ~n ~a ~n ~a)" cont val))
       (cases continuation cont 
         (end-cont () 
           (begin
