@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define instrument-all (make-parameter #f))
-  (define instrument-stat (make-parameter #t))
+  (define instrument-stat (make-parameter #f))
 
   (define current-cont 1)
   (define max-cont 1)
@@ -40,8 +40,13 @@
       (set! max-cont 1)
       (cases program pgm
         (a-program (exp1)
-          (value-of/k exp1 (init-env) (end-cont))))))  
+          (trampoline
+           (value-of/k exp1 (init-env) (end-cont)))))))
 
+
+  (define trampoline
+    (lambda (bounce)
+      (if (expval? bounce) bounce (trampoline (bounce)))))
   ;; value-of/k : Exp * Env * Cont -> FinalAnswer
   ;; Page: 143--146, and 154
   (define value-of/k
@@ -204,9 +209,10 @@
             (rand-cont val (cdr rands) '() saved-cont)))
         (rand-cont (rator-val rands rand-vals saved-cont)
           (if (null? rands)
+              (lambda ()
               (apply-procedure/k (expval->proc rator-val)
                                  (cons val rand-vals)
-                                 saved-cont)
+                                 saved-cont))
               (begin (stat +)
                 (value-of/k (car rands) saved-env
                 (rand-cont rator-val
@@ -288,11 +294,12 @@
   ;; Page 152 and 155
   (define apply-procedure/k
     (lambda (proc1 args cont)
+      (lambda ()
       (cases proc proc1
         (procedure (vars body saved-env)
           (value-of/k body
             (extend-env* vars (map newref args) saved-env)
-            cont)))))
+            cont))))))
 
   (define extend-env*
     (lambda (vars vals env)
