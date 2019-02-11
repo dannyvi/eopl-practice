@@ -9,7 +9,7 @@
   (provide value-of-program value-of/k)
   (provide trace-apply-procedure)
 
-  (define trace-apply-procedure (make-parameter #f))
+  (define trace-apply-procedure (make-parameter #t))
 
 ;;;;;;;;;;;;;;;; continuations ;;;;;;;;;;;;;;;;
 
