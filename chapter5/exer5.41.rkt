@@ -117,38 +117,70 @@
            (list-val (lst) lst)
            (else (expval-extractor-error 'list v)))))
 
-(define-datatype continuation continuation?
-  (end-cont)
-  (diff1-cont
-   (exp2 expression?)
-   (env environment?)
-   (cont continuation?))
-  (diff2-cont
-   (val1 expval?)
-   (cont continuation?))
-  (unop-arg-cont
-   (unop unary-op?)
-   (cont continuation?))
-  (if-test-cont
-   (exp2 expression?)
-   (exp3 expression?)
-   (env environment?)
-   (cont continuation?))
-  (rator-cont
-   (rand expression?)
-   (env environment?)
-   (cont continuation?))
-  (rand-cont
-   (val1 expval?)
-   (cont continuation?))
-  (try-cont
-   (var symbol?)
-   (handler-exp expression?)
-   (env environment?)
-   (cont continuation?))
-  (raise1-cont
-   (saved-cont continuation?))
-  )
+(define compose
+  (lambda (apply-handler apply-cont)
+    (lambda args (if (null? args) (apply-handler) (apply-cont (car args))))))
+
+(define raise-val 'uninitialized)
+
+(define end-cont
+  (lambda ()
+    (define apply-cont (lambda (val) val))
+    (define apply-handler
+      (lambda () (eopl:error 'apply-handler "uncaught exception!")))
+    (compose apply-handler apply-cont)
+    ))
+
+(define diff1-cont
+  (lambda (exp2 env cont)
+    (define apply-cont (lambda (val) (value-of/k exp2 env (diff2-cont val cont))))
+    (define apply-handler (lambda () (cont)))
+    (compose apply-handler apply-cont)
+    ))
+
+(define diff2-cont
+  (lambda (val1 cont)
+    (compose (lambda () (cont))                ; apply-handler
+             (lambda (val)                     ; apply-cont
+               (let ((n1 (expval->num val))
+                     (n2 (expval->num val1)))
+                 (apply-cont cont (num-val (- n1 n2))))))))
+
+(define unop-arg-cont
+  (lambda (unop cont)
+    (compose (lambda () (cont))
+             (lambda (val)
+               (apply-cont cont (apply-unop unop val))))))
+
+(define if-test-cont
+  (lambda (exp2 exp3 env cont)
+    (compose (lambda () (cont))
+             (lambda (val)
+               (if (expval->bool val)
+                   (value-of/k exp2 env cont)
+                   (value-of/k exp3 env cont))))))
+
+(define (rator-cont rand env cont)
+  (compose (lambda () (cont))
+           (lambda (val)
+             (value-of/k rand env (rand-cont val cont)))))
+
+(define (rand-cont val1 cont)
+  (compose (lambda () (cont))
+           (lambda (val)
+             (apply-procedure (expval->proc val1) val cont))))
+
+(define (try-cont var handler-exp env cont)
+  (compose (lambda ()
+             (value-of/k handler-exp (extend-env var raise-val env) cont))
+           (lambda (val) (apply-cont cont val))))
+
+(define (raise1-cont cont)
+  (compose (lambda () (cont))
+           (lambda (val) (set! raise-val val) (cont))))
+
+(define (apply-cont cont val)
+  (cont val))
 
 (define apply-unop
   (lambda (unop val)
@@ -164,64 +196,6 @@
            (procedure (var body saved-env)
                       (value-of/k body (extend-env var arg saved-env) cont)))))
 
-(define apply-handler
-  (lambda (val cont)
-    (cases continuation cont
-           ;; interesting cases
-           (try-cont (var handler-exp saved-env saved-cont)
-                     (value-of/k handler-exp
-                                 (extend-env var val saved-env)
-                                 saved-cont))
-           (end-cont () (eopl:error 'apply-handler "uncaught exception!"))
-           ;; otherwise, just look for the handler...
-           (diff1-cont (exp2 saved-env saved-cont)
-                       (apply-handler val saved-cont))
-           (diff2-cont (val1 saved-cont)
-                       (apply-handler val saved-cont))
-           (if-test-cont (exp2 exp3 env saved-cont)
-                         (apply-handler val saved-cont))
-           (unop-arg-cont (unop saved-cont)
-                          (apply-handler val saved-cont))
-           (rator-cont (rand saved-env saved-cont)
-                       (apply-handler val saved-cont))
-           (rand-cont (val1 saved-cont)
-                      (apply-handler val saved-cont))
-           (raise1-cont (saved-cont)
-                        (apply-handler val saved-cont))
-           )))
-
-(define apply-cont
-  (lambda (cont val)
-    (cases continuation cont
-      (end-cont () val)
-      (diff1-cont (exp2 saved-env saved-cont)
-        (value-of/k exp2 saved-env (diff2-cont val saved-cont)))
-      (diff2-cont (val1 saved-cont)
-        (let ((n1 (expval->num val1))
-              (n2 (expval->num val)))
-          (apply-cont saved-cont
-            (num-val (- n1 n2)))))
-      (unop-arg-cont (unop saved-cont)
-        (apply-cont saved-cont
-          (apply-unop unop val)))
-      (if-test-cont (exp2 exp3 saved-env saved-cont)
-        (if (expval->bool val)
-          (value-of/k exp2 saved-env saved-cont)
-          (value-of/k exp3 saved-env saved-cont)))
-      (rator-cont (rand saved-env saved-cont)
-        (value-of/k rand saved-env
-          (rand-cont val saved-cont)))
-      (rand-cont (val1 saved-cont)
-        (let ((proc (expval->proc val1)))
-          (apply-procedure proc val saved-cont)))
-      ;; the body of the try finished normally-- don't evaluate the handler
-      (try-cont (var handler-exp saved-env saved-cont)
-        (apply-cont saved-cont val))
-      ;; val is the value of the argument to raise
-      (raise1-cont (saved-cont)
-        ;; we put the short argument first to make the trace more readable.
-        (apply-handler val saved-cont))
-      )))
 
 (define value-of/k
   (lambda (exp env cont)
