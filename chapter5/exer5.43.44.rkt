@@ -30,10 +30,12 @@
     (expression ("raise" expression) raise-exp)
     (expression ("letcc" identifier "in" expression) letcc-exp)
     (expression ("throw" expression "to" expression) throw-exp)
+    (expression ("call-with-current-continuation" "(" identifier ")" expression) call/cc-exp)
     (unary-op ("null?") null?-unop)
     (unary-op ("car")   car-unop)
     (unary-op ("cdr" )  cdr-unop)
     (unary-op ("zero?") zero?-unop)
+
     ))
 
 (sllgen:make-define-datatypes the-lexical-spec the-grammar)
@@ -193,7 +195,8 @@
            (raise1-cont (saved-cont)
                         (apply-handler val saved-cont))
            (throw2-cont (exp1 saved-env saved-cont)
-                       (apply-handler val saved-cont))
+                        (apply-handler val saved-cont))
+           
            )))
 
 (define apply-cont
@@ -271,6 +274,8 @@
                  ))
       (throw-exp (exp1 exp2)
                  (value-of/k exp2 env (throw2-cont exp1 env cont)))
+      (call/cc-exp (var body)
+                   (value-of/k (letcc-exp var body) env cont))
       )))
 
 
