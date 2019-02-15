@@ -52,3 +52,7 @@ end
 
 (run 30 "3")
 
+
+
+
+(define-syntax-rule (pp  a b) (eopl:printf "~a ~a" a b))
