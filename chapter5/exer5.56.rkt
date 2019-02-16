@@ -1,6 +1,6 @@
 #lang eopl
 
-(require (only-in racket filter foldr))
+(require (only-in racket filter foldr remove))
 
 (define instrument-newref (make-parameter #f))
 (define trace-interp (make-parameter #f))
@@ -38,12 +38,9 @@
       (expression ("set" identifier "=" expression) set-exp)
       (expression ("spawn" "(" expression ")") spawn-exp)
       (expression  ("yield" "(" ")") yield-exp)
-      (expression ("mutex" "(" ")") mutex-exp)
-      (expression ("wait" "(" expression ")") wait-exp)
-      (expression ("signal" "(" expression ")") signal-exp)
       (expression ("kill" "(" expression ")") kill-exp)
-      (expression ("send" "(" expression "," expression ")") send-exp)
-      (expression ("receive" "(" identifier ")") recv-exp)
+      (expression ("send" "(" expression "," expression")") send-exp)
+      (expression ("recv" "("  ")") recv-exp)
       ;; other unary operators
       (expression (unop "(" expression ")") unop-exp)
 
@@ -172,11 +169,12 @@
 
     (spawn-cont 
       (saved-cont continuation?))
-    (wait-cont 
-      (saved-cont continuation?))
-    (signal-cont 
-     (saved-cont continuation?))
     (kill-cont (saved-cont continuation?))
+    (send1-cont (exp2 expression?)
+                (saved-env environment?)
+                (saved-cont continuation?))
+    (send2-cont (val expval?)
+                (saved-cont continuation?))
 
     (unop-arg-cont
       (unop1 unop?)
@@ -389,8 +387,7 @@
 
 (define-datatype a-thread a-thread?
   (the-thread (id expval?)
-              (proc procedure?)
-              (msg (list-of expval?))))
+              (proc procedure?)))
 
 
   ;;;;;;;;;;;;;;;; the state ;;;;;;;;;;;;;;;;
@@ -412,15 +409,17 @@
       (set! the-time-remaining the-max-time-slice) 
       ))
 
+
 ;;;;;;; thread management ;;;;;;;;
 (define the-current-thread-id 'uninitialized)
 (define global-thread-id 'uninitialized)
-
+(define message-queue 'uninitialized)
 (define initialize-thread
   (lambda ()
     (set! global-thread-id (num-val 0))
     (set! the-current-thread-id (num-val 0))
-    (set! global-mutexes '())))
+    (set! global-mutexes '())
+    (set! message-queue '(((num-val 0) ())))))
 
 (define new-thread-id
   (lambda () 
@@ -468,6 +467,55 @@
 (define remove-thread-from-mutexes
   (lambda (thid)
     (map (lambda (mut) (remove-thread-from-mutex thid mut)) global-mutexes)))
+
+
+(define (init-message-queue! id)
+  (set! message-queue (append message-queue (list (list id (list)))))
+  )
+
+(define (destroy-message-queue! id)
+  (set! message-queue (filter (lambda (q) (not (equal? (car q) id))) message-queue))
+  )
+
+(define (send-message id msg)
+  (define (add-msg id msg msg-queue)
+    (cond [(null? msg-queue) '()]
+          [(equal? (caar msg-queue) id)
+           (let* ((queue (cadar msg-queue))
+                  (m-queue (append queue (list msg)))
+                  (thrd-queue (list id m-queue)))
+             (cons thrd-queue (cdr msg-queue)))]
+          [else (cons (car msg-queue) (add-msg id msg (cdr msg-queue)))]))
+  (set! message-queue (add-msg id msg message-queue))
+  )
+  ;;(set! message-queue (append message-queue (list (list id msg)))))
+
+(define (receive-message id)
+  (let ((result #f))
+    (define (remove-first-msg id msg-queue)
+      (cond [(null? msg-queue) '()]
+            [(equal? (caar msg-queue) id)
+             (let* ((queue (cadar msg-queue)))
+               (when (> (length queue) 0)
+                 (set! result (car queue))
+                 (set! queue (cdr queue)))
+               (cons (list id queue) (cdr msg-queue)))]
+            [else (cons (car msg-queue) (remove-first-msg id (cdr msg-queue)))]))
+    (set! message-queue (remove-first-msg id message-queue))
+    result))
+
+;;  (define (recv-msg id queue)
+;;    (cond
+;;      [(null? queue) #f]
+;;      [(equal? (caar queue) id)
+;;       (let ((msg (cadar queue)))
+;;         (set! message-queue (remove (car queue) message-queue))
+;;         msg)]
+;;      [else (recv-msg id (cdr queue))]))
+;;  (recv-msg id message-queue))
+
+
+
   ;;;;;;;;;;;;;;;; the final answer ;;;;;;;;;;;;;;;;
 
   ;; place-on-ready-queue! : Thread -> Unspecified
@@ -516,57 +564,7 @@
       (set! the-time-remaining (- the-time-remaining 1))))
 
 
-  ;; new-mutex () -> Mutex
-  ;; Page: 188
-  (define new-mutex
-    (lambda ()
-      (let ((m (a-mutex
-                (newref #f)
-                (newref '()))))
-        (set! global-mutexes (append global-mutexes (list m)))
-        m)))
 
-  ; wait queue, initially empty
-
-  ;; wait-for-mutex : Mutex * Thread -> FinalAnswer
-  ;; waits for mutex to be open, then closes it.
-  ;; Page: 190
-  (define wait-for-mutex
-    (lambda (m th)
-      (cases mutex m
-        (a-mutex (ref-to-closed? ref-to-wait-queue)
-          (cond
-            ((deref ref-to-closed?)                  
-             (setref! ref-to-wait-queue
-               (enqueue (deref ref-to-wait-queue) th))
-             (run-next-thread))
-            (else
-              (setref! ref-to-closed? #t)
-              (cases a-thread th
-              (the-thread (id proc) (proc)))))))))
-
-  ;; signal-mutex : Mutex * Thread -> FinalAnswer
-  ;; Page 190
-  (define signal-mutex
-    (lambda (m th)
-      (cases mutex m
-        (a-mutex (ref-to-closed? ref-to-wait-queue)
-          (let ((closed? (deref ref-to-closed?))
-                (wait-queue (deref ref-to-wait-queue)))
-            (when closed?
-              (if (empty? wait-queue)
-                (setref! ref-to-closed? #f)
-                (dequeue wait-queue
-                  (lambda (first-waiting-th other-waiting-ths)
-                    (place-on-ready-queue!
-                      first-waiting-th)
-                    (setref!
-                      ref-to-wait-queue
-                      other-waiting-ths)))))
-            (cases a-thread th
-             (the-thread (id proc)
-                (set! the-current-thread-id id)
-                (proc))))))))
 
   ;; value-of/k : Exp * Env * Cont -> FinalAnswer
   ;; Page 182
@@ -643,19 +641,23 @@
                        (lambda () (apply-cont cont (num-val 99)))))
           (run-next-thread))
 
-        (mutex-exp ()
-          (apply-cont cont (mutex-val (new-mutex))))  
-
-        (wait-exp (exp)
-          (value-of/k exp env
-            (wait-cont cont)))
-
-        (signal-exp (exp)
-          (value-of/k exp env
-                      (signal-cont cont)))
-
         (kill-exp (exp)
-          (value-of/k exp env (kill-cont cont)))
+                  (value-of/k exp env (kill-cont cont)))
+
+        (send-exp (exp1 exp2)
+                  (value-of/k exp1 env (send1-cont exp2 env cont)))
+
+        (recv-exp ()
+          (let ((val (receive-message the-current-thread-id)))
+            (when (trace-running-thread)
+            (eopl:printf "the message: ~s~n receiving: ~a~n" message-queue val))
+             (if val (apply-cont cont val)
+                 (begin
+                   (place-on-ready-queue!
+                    (the-thread the-current-thread-id
+                                (lambda () (value-of/k (recv-exp) env cont))))
+                   (run-next-thread))
+                 )))
 
         (unop-exp (unop1 exp)
           (value-of/k exp env
@@ -680,9 +682,11 @@
 
             (end-main-thread-cont ()
               (set-final-answer! val)
+              (destroy-message-queue! the-current-thread-id)
               (run-next-thread))
   
             (end-subthread-cont ()
+              (destroy-message-queue! the-current-thread-id)
               (run-next-thread))
                
             (diff1-cont (exp2 saved-env saved-cont)
@@ -710,35 +714,31 @@
             (spawn-cont (saved-cont)
               (let ((proc1 (expval->proc val)))
                 (let ((id (new-thread-id)))
-                (place-on-ready-queue!
-
-                 (the-thread
-
-                  id
-                  (lambda ()
-                    (apply-procedure proc1
-                      id
-                      (end-subthread-cont)))))
-              (apply-cont saved-cont (num-val 73)))))
-
-            (wait-cont (saved-cont)
-              (wait-for-mutex
-                (expval->mutex val)
-                (the-thread
-                 the-current-thread-id
-                 (lambda () (apply-cont saved-cont (num-val 52))))))
-
-            (signal-cont (saved-cont)
-              (signal-mutex
-                (expval->mutex val)
-                (the-thread
-                 the-current-thread-id
-                 (lambda () (apply-cont saved-cont (num-val 53))))))
+                  (init-message-queue! id)
+                  (place-on-ready-queue!
+                   (the-thread
+                    id
+                    (lambda ()
+                      (apply-procedure proc1
+                                       id
+                                       (end-subthread-cont)))))
+                  (apply-cont saved-cont (num-val 73)))))
 
             (kill-cont (saved-cont)
                        (remove-thread-from-queue val)
                        (remove-thread-from-mutexes val)
+                       (destroy-message-queue! the-current-thread-id)
                        (apply-cont saved-cont val))
+
+            (send1-cont (exp2 saved-env saved-cont)
+                        (value-of/k exp2 saved-env (send2-cont val saved-cont)))
+
+            (send2-cont (thrd-id saved-cont)
+                        (when (trace-running-thread)
+                          (eopl:printf "sending message to thread ~a ~a~n"
+                                       (expval->num thrd-id) val))
+                        (send-message thrd-id val)
+                        (apply-cont saved-cont (num-val 1000)))
 
             (unop-arg-cont (unop1 cont)
               (apply-unop unop1 val cont))
@@ -787,6 +787,7 @@
     (initialize-store!)
     (initialize-scheduler! timeslice)
     (initialize-thread)
+    ;;(init-message-queue! (num-val 0))
     (cases program pgm
            (a-program (exp1)
                       (value-of/k

@@ -164,11 +164,20 @@ letrec busywait (k) = if zero?(buffer)
 
 (run 10 "let r = proc (k) let a = recv() in if zero?(a)
                             then print(100) else print(80)
-           in letrec s (n) = if zero?(n) then send(1, 0) else begin print(n);
+           in letrec s (n) = if zero?(n) then send(1, 1) else begin print(n);
 (s -(n,1)) end
             in begin
                 spawn(proc (d) (r 99));
                (s 100)
-               end  ")
+end  ")
+
+(run 10 "let r = proc (k)  if zero?(recv())
+                            then print(100) else print(80)
+           in letrec s (n) = if zero?(n) then send(1, 33) else begin print(n);
+(s -(n,1)) end
+in begin
+spawn(proc (d) (r 99));
+(s 100)
+end  ")
 
 (define-syntax-rule (pp  a b) (eopl:printf "~a ~a" a b))
