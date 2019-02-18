@@ -448,27 +448,6 @@
         result))))
 ;;    (foldr (lambda (l r) (or (is-thread-id? r thid))) #f the-ready-queue)))
 
-(define remove-thread-from-list
-  (lambda (thid lst)
-    (filter
-     (lambda (th)
-       (cases a-thread th
-           (the-thread (id proc) (not (equal? thid id))))) lst)))
-
-(define remove-thread-from-mutex
-  (lambda (thid mut)
-    (cases mutex mut
-      (a-mutex (ref-to-closed? ref-to-wait-queue)
-        (let ((q (deref ref-to-wait-queue)))
-          (let ((rq (remove-thread-from-list thid q)))
-            (set! mut (a-mutex ref-to-closed? (newref rq)))
-            ))))))
-
-(define remove-thread-from-mutexes
-  (lambda (thid)
-    (map (lambda (mut) (remove-thread-from-mutex thid mut)) global-mutexes)))
-
-
 (define (init-message-queue! id)
   (set! message-queue (append message-queue (list (list id (list)))))
   )
@@ -503,17 +482,6 @@
             [else (cons (car msg-queue) (remove-first-msg id (cdr msg-queue)))]))
     (set! message-queue (remove-first-msg id message-queue))
     result))
-
-;;  (define (recv-msg id queue)
-;;    (cond
-;;      [(null? queue) #f]
-;;      [(equal? (caar queue) id)
-;;       (let ((msg (cadar queue)))
-;;         (set! message-queue (remove (car queue) message-queue))
-;;         msg)]
-;;      [else (recv-msg id (cdr queue))]))
-;;  (recv-msg id message-queue))
-
 
 
   ;;;;;;;;;;;;;;;; the final answer ;;;;;;;;;;;;;;;;
@@ -726,7 +694,6 @@
 
             (kill-cont (saved-cont)
                        (remove-thread-from-queue val)
-                       (remove-thread-from-mutexes val)
                        (destroy-message-queue! the-current-thread-id)
                        (apply-cont saved-cont val))
 
