@@ -384,7 +384,7 @@
        (occurs-free?/k var (caddr exp)
                        (occurs-free-cont1 (not (eqv? var (car (cadr exp)))) cont))]
       [else
-       (occurs-free?/k var (car exp) (occurs-free-cont2 var (cadr exp) cont))])))
+       (occurs-free?/k var (cadr exp) (occurs-free-cont2 var (car exp) cont))])))
 
 (define apply-cont
   (lambda (cont val)
@@ -398,7 +398,7 @@
       (occurs-free-cont2 (var exp saved-cont)
                          (occurs-free?/k var exp (occurs-free-cont3 val saved-cont)))
       (occurs-free-cont3 (val1 saved-cont)
-                         (apply-cont saved-cont (or val val1))))))
+                         (apply-cont saved-cont (or val1 val))))))
 
 (define occurs-free?
   (lambda (var exp)
@@ -420,7 +420,7 @@
        (occurs-free?/k var (caddr exp)
                        (occurs-free-cont1 (not (eqv? var (car (cadr exp)))) cont))]
       [else
-       (occurs-free?/k var (car exp) (occurs-free-cont2 var (cadr exp) cont))])))
+       (occurs-free?/k var (cadr exp) (occurs-free-cont2 var (car exp) cont))])))
 
 (define apply-cont
   (lambda (cont val)
@@ -446,7 +446,7 @@
 (define occurs-free-cont3
   (lambda (val1 cont)
     (lambda (val)
-      (apply-cont cont (or val1 val)))))
+      (apply-cont cont (or val val1)))))
 
 ;;;;;;;;;;; registerized ;;;;;;;;;;;;;;;
 
@@ -485,8 +485,8 @@
        ;(occurs-free?/k var (caddr exp)
        ;                (occurs-free-cont1 (not (eqv? var (car (cadr exp)))) cont))]
       [else
-         (set! cont (occurs-free-cont2 var (cadr exp) cont))
-         (set! exp (car exp))
+         (set! cont (occurs-free-cont2 var (car exp) cont))
+         (set! exp (cadr exp))
          (occurs-free?/k)])))
        ;;(occurs-free?/k var (car exp) (occurs-free-cont2 var (cadr exp) cont))])))
 
