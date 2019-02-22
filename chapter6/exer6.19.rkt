@@ -16,7 +16,7 @@
     (expression (number) const-exp)
     (expression ("-" "(" expression "," expression ")") diff-exp)
     (expression ("+" "(" (separated-list expression ",") ")") sum-exp)
-    (expression ("zero?" "(" expression ")") zero?-exp)
+tail-form-exp?    (expression ("zero?" "(" expression ")") zero?-exp)
     (expression ("if" expression "then" expression "else" expression) if-exp)
     (expression
       ("letrec" (arbno identifier "(" (arbno identifier) ")" "=" expression)
