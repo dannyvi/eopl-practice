@@ -1,4 +1,4 @@
-
+#lang eopl
 (define in-S?
   (lambda (n)
     (if (zero? n)
@@ -19,7 +19,6 @@
   (lambda (n)
     (eopl:error 'nth-element
                 "List too short by ~s elements.~%" (+ n 1))))
-
 
 (define nth-elem
   (lambda (lst nth)

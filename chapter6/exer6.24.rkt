@@ -9,6 +9,8 @@
       (value number?))
     (bool-val
       (boolean boolean?))
+    (list-val
+      (lst list?))
     (proc-val
       (proc proc?)))
 
@@ -25,6 +27,12 @@
       (cases expval v
 	(bool-val (bool) bool)
 	(else (expval-extractor-error 'bool v)))))
+
+(define expval->list
+  (lambda (v)
+    (cases expval v
+           (list-val (lst) lst)
+           (else (expval-extractor-error 'list v)))))
 
   (define expval->proc
     (lambda (v)
@@ -163,6 +171,7 @@
       (expression (number) const-exp)
       (expression ("-" "(" expression "," expression ")") diff-exp)
       (expression ("+" "(" (separated-list expression ",") ")") sum-exp)
+      (expression ("list" "(" (separated-list expression ",") ")") list-exp)
       (expression ("zero?" "(" expression ")") zero?-exp)
       (expression ("if" expression "then" expression "else" expression)
        if-exp)
@@ -206,6 +215,8 @@
       (simple-expression ("zero?" "(" simple-expression ")") cps-zero?-exp)
       (simple-expression ("+" "(" (separated-list simple-expression ",") ")")
                          cps-sum-exp)
+      (simple-expression ("list" "(" (separated-list simple-expression ",") ")")
+                         cps-list-exp)
       (simple-expression ("proc" "(" (arbno identifier) ")" tfexp) cps-proc-exp)
       (tfexp (simple-expression) simple-exp->exp)
       (tfexp ("let" identifier "=" simple-expression "in" tfexp) cps-let-exp)
@@ -216,6 +227,142 @@
       (tfexp ("(" simple-expression (arbno simple-expression) ")") cps-call-exp)
       ))
 
+(define format-simple-exp
+  (lambda (exp)
+    (cases simple-expression exp
+      (cps-const-exp (num) (number->string  num))
+      (cps-var-exp (var) (symbol->string var))
+      (cps-zero?-exp (exp1)
+        (string-join (list "zero?(" (format-simple-exp exp1) ") ")))
+      (cps-diff-exp (exp1 exp2)
+        (string-join (list "-(" (format-simple-exp exp1) ","
+                           (format-simple-exp exp2) ")")))
+      (cps-sum-exp (exps)
+        (string-join (map format-simple-exp exps) ", "
+                     #:before-first "+(" #:after-last ") "))
+      (cps-list-exp (exps)
+                   (string-join (map format-simple-exp exps) ", "
+                                #:before-first "list(" #:after-last ") "))
+      (cps-proc-exp (vars body)
+        (let ((var-str (string-join (map symbol->string vars) 
+          #:before-first "(" #:after-last ") "))
+              (body-str (format-string body)))
+          (string-join (list "proc" var-str body-str))))
+      )))
+
+(define format-vars
+  (lambda (var-list)
+    (string-join (map symbol->string var-list) 
+                 #:before-first "(" #:after-last ")")))
+
+(define format-string
+  (lambda (expression)
+    (cases tfexp expression
+      (simple-exp->exp (exp) (format-simple-exp exp))
+      (cps-let-exp (var exp1 body)
+        (string-join (list (symbol->string var)
+                           (format-simple-exp exp1)
+                           (format-string body))))
+      (cps-letrec-exp (p-vars b-varss p-exps letrec-body)
+        (let ((proc-str (map (lambda (p-name b-vars p-exp)
+          (string-join (list (symbol->string p-name)
+                             (format-vars b-vars) "="
+                             (format-string p-exp)))) p-vars b-varss p-exps)))
+          (string-join (list "letrec" (string-join proc-str) "in" (format-string letrec-body)))))
+      (cps-if-exp (exp1 exp2 exp3)
+        (string-join (list "if" (format-simple-exp exp1) "~%"
+                           "then" (format-string exp2)
+                           "else" (format-string exp3))))
+      (cps-call-exp (exp exps)
+        (string-join (map format-simple-exp (append (list exp) exps))
+                     #:before-first "(" #:after-last ") ~%")))))
+
+(define pretty-print
+  (lambda (cpsed-pgm)
+    (cases cps-out-program cpsed-pgm
+           (cps-a-program (exp1) (eopl:printf (format-string exp1))))))
+
+  (define value-of-program
+    (lambda (pgm)
+      (cases cps-out-program pgm
+        (cps-a-program (exp1)
+          (value-of/k exp1 (init-env) (end-cont))))))
+
+  (define value-of-simple-exp
+    (lambda (exp env)
+      (cases simple-expression exp
+        (cps-const-exp (num) (num-val num))
+        (cps-var-exp (var) (apply-env env var))
+        (cps-diff-exp (exp1 exp2)
+          (let ((val1 (expval->num (value-of-simple-exp exp1 env)))
+                (val2 (expval->num (value-of-simple-exp exp2 env))))
+            (num-val (- val1 val2))))
+        (cps-zero?-exp (exp1)
+          (bool-val (zero? (expval->num (value-of-simple-exp exp1 env)))))
+        (cps-sum-exp (exps)
+          (let ((nums (map (lambda (exp)
+            (expval->num (value-of-simple-exp exp env))) exps)))
+            (num-val
+             (let sum-loop ((nums nums))
+               (if (null? nums) 0
+                   (+ (car nums) (sum-loop (cdr nums))))))))
+        (cps-list-exp (exps)
+          (let ((elems (map (lambda (exp) (value-of-simple-exp exp env)) exps)))
+            (list-val elems)))
+            ;(num-val
+            ; (let sum-loop ((nums nums))
+            ;   (if (null? nums) 0
+            ;       (+ (car nums) (sum-loop (cdr nums))))))))
+        (cps-proc-exp (vars body) (proc-val (procedure vars body env)))
+        )))
+
+  ;; value-of/k : TfExp * Env * Cont -> FinalAnswer
+  ;; Page: 209
+  (define value-of/k
+    (lambda (exp env cont)
+      (cases tfexp exp
+        (simple-exp->exp (simple)
+          (apply-cont cont (value-of-simple-exp simple env)))
+        (cps-let-exp (var rhs body)
+         (let ((val (value-of-simple-exp rhs env)))
+            (value-of/k body
+              (extend-env* (list var) (list val) env) cont)))
+        (cps-letrec-exp (p-names b-varss p-bodies letrec-body)
+          (value-of/k letrec-body
+            (extend-env-rec** p-names b-varss p-bodies env) cont))
+        (cps-if-exp (simple1 body1 body2)
+          (if (expval->bool (value-of-simple-exp simple1 env))
+            (value-of/k body1 env cont)
+            (value-of/k body2 env cont)))
+        (cps-call-exp (rator rands)
+          (let ((rator-proc (expval->proc (value-of-simple-exp rator env)))
+                (rand-vals (map (lambda (simple)
+                                  (value-of-simple-exp simple env)) rands)))
+            (apply-procedure/k rator-proc rand-vals cont))))))
+
+  ;; apply-cont : Cont * ExpVal -> Final-ExpVal
+  ;; there's only one continuation, and it only gets invoked once, at
+  ;; the end of the computation.
+  (define apply-cont
+    (lambda (cont val)
+      (cases continuation cont (end-cont () val))))
+
+  ;; apply-procedure/k : Proc * ExpVal * Cont -> ExpVal
+  ;; Page: 209
+  (define apply-procedure/k
+    (lambda (proc1 args cont)
+      (cases proc proc1
+        (procedure (vars body saved-env)
+          (value-of/k body
+            (extend-env* vars args saved-env) cont)))))
+
+  '(define apply-procedure/k
+    (lambda (proc1 args cont)
+      (cases proc proc1
+        (procedure (vars body saved-env)
+          (value-of/k body
+            (extend-env* vars args saved-env)
+            cont)))))
   ;;;;;;;;;;;;;;;; sllgen boilerplate ;;;;;;;;;;;;;;;;
 
   (sllgen:make-define-datatypes cps-out-lexical-spec cps-out-grammar)
@@ -257,7 +404,9 @@
         (diff-exp (exp1 exp2)
           (cps-of-diff-exp exp1 exp2 cont))
         (sum-exp (exps)
-          (cps-of-sum-exp exps cont))
+                 (cps-of-sum-exp exps cont))
+        (list-exp (exps)
+                  (cps-of-list-exp exps cont))
         (if-exp (exp1 exp2 exp3)
           (cps-of-if-exp exp1 exp2 exp3 cont))
         (let-exp (var exp1 body)
@@ -359,7 +508,9 @@
             (cps-of-exp exp (cps-var-exp 'k%00))))
         (sum-exp (exps)
           (cps-sum-exp
-            (map cps-of-simple-exp exps)))
+           (map cps-of-simple-exp exps)))
+        (list-exp (exps)
+                  (cps-list-exp (map cps-of-simple-exp exps)))
         (else
           (report-invalid-exp-to-cps-of-simple-exp exp)))))
 
@@ -408,6 +559,13 @@
             (cps-diff-exp
               (car new-rands)
               (cadr new-rands)))))))
+
+
+(define cps-of-list-exp
+  (lambda (exps k-exp)
+    (cps-of-exps exps
+      (lambda (new-rands)
+        (make-send-to-cont k-exp (cps-list-exp new-rands))))))
 
   ;; cps-of-if-exp : InpExp * InpExp * InpExp * SimpleExp -> TfExp
   ;; Page: 223
@@ -500,137 +658,9 @@
         ((zero? n) (cons val (cdr lst)))
         (else (cons (car lst) (list-set (cdr lst) (- n 1) val))))))
 
-
-(define format-simple-exp
-  (lambda (exp)
-    (cases simple-expression exp
-      (cps-const-exp (num) (number->string  num))
-      (cps-var-exp (var) (symbol->string var))
-      (cps-zero?-exp (exp1)
-        (string-join (list "zero?(" (format-simple-exp exp1) ") ")))
-      (cps-diff-exp (exp1 exp2)
-        (string-join (list "-(" (format-simple-exp exp1) ","
-                           (format-simple-exp exp2) ")")))
-      (cps-sum-exp (exps)
-        (string-join (map format-simple-exp exps) ", "
-          #:before-first "+(" #:after-last ") "))
-      (cps-proc-exp (vars body)
-        (let ((var-str (string-join (map symbol->string vars) 
-          #:before-first "(" #:after-last ") "))
-              (body-str (format-string body)))
-          (string-join (list "proc" var-str body-str))))
-      )))
-
-(define format-vars
-  (lambda (var-list)
-    (string-join (map symbol->string var-list) 
-                 #:before-first "(" #:after-last ")")))
-
-(define format-string
-  (lambda (expression)
-    (cases tfexp expression
-      (simple-exp->exp (exp) (format-simple-exp exp))
-      (cps-let-exp (var exp1 body)
-        (string-join (list "let" (symbol->string var) "="
-                           (format-simple-exp exp1) "in"
-                           (format-string body))))
-      (cps-letrec-exp (p-vars b-varss p-exps letrec-body)
-        (let ((proc-str (map (lambda (p-name b-vars p-exp)
-          (string-join (list (symbol->string p-name)
-                             (format-vars b-vars) "="
-                             (format-string p-exp)))) p-vars b-varss p-exps)))
-          (string-join (list "letrec" (string-join proc-str) "in" (format-string letrec-body)))))
-      (cps-if-exp (exp1 exp2 exp3)
-        (string-join (list "if" (format-simple-exp exp1) "~%"
-                           "then" (format-string exp2)
-                           "else" (format-string exp3))))
-      (cps-call-exp (exp exps)
-        (string-join (map format-simple-exp (append (list exp) exps))
-                     #:before-first "(" #:after-last ") ~%")))))
-
-(define pretty-print
-  (lambda (cpsed-pgm)
-    (cases cps-out-program cpsed-pgm
-           (cps-a-program (exp1) (eopl:printf (format-string exp1))))))
-
-  (define value-of-program
-    (lambda (pgm)
-      (cases cps-out-program pgm
-        (cps-a-program (exp1)
-          (value-of/k exp1 (init-env) (end-cont))))))
-
-  (define value-of-simple-exp
-    (lambda (exp env)
-      (cases simple-expression exp
-        (cps-const-exp (num) (num-val num))
-        (cps-var-exp (var) (apply-env env var))
-        (cps-diff-exp (exp1 exp2)
-          (let ((val1 (expval->num (value-of-simple-exp exp1 env)))
-                (val2 (expval->num (value-of-simple-exp exp2 env))))
-            (num-val (- val1 val2))))
-        (cps-zero?-exp (exp1)
-          (bool-val (zero? (expval->num (value-of-simple-exp exp1 env)))))
-        (cps-sum-exp (exps)
-          (let ((nums (map (lambda (exp)
-            (expval->num (value-of-simple-exp exp env))) exps)))
-            (num-val
-             (let sum-loop ((nums nums))
-               (if (null? nums) 0
-                   (+ (car nums) (sum-loop (cdr nums))))))))
-        (cps-proc-exp (vars body) (proc-val (procedure vars body env)))
-        )))
-
-  ;; value-of/k : TfExp * Env * Cont -> FinalAnswer
-  ;; Page: 209
-  (define value-of/k
-    (lambda (exp env cont)
-      (cases tfexp exp
-        (simple-exp->exp (simple)
-          (apply-cont cont (value-of-simple-exp simple env)))
-        (cps-let-exp (var rhs body)
-         (let ((val (value-of-simple-exp rhs env)))
-            (value-of/k body
-              (extend-env* (list var) (list val) env) cont)))
-        (cps-letrec-exp (p-names b-varss p-bodies letrec-body)
-          (value-of/k letrec-body
-            (extend-env-rec** p-names b-varss p-bodies env) cont))
-        (cps-if-exp (simple1 body1 body2)
-          (if (expval->bool (value-of-simple-exp simple1 env))
-            (value-of/k body1 env cont)
-            (value-of/k body2 env cont)))
-        (cps-call-exp (rator rands)
-          (let ((rator-proc (expval->proc (value-of-simple-exp rator env)))
-                (rand-vals (map (lambda (simple)
-                                  (value-of-simple-exp simple env)) rands)))
-            (apply-procedure/k rator-proc rand-vals cont))))))
-
-  ;; apply-cont : Cont * ExpVal -> Final-ExpVal
-  ;; there's only one continuation, and it only gets invoked once, at
-  ;; the end of the computation.
-  (define apply-cont
-    (lambda (cont val)
-      (cases continuation cont (end-cont () val))))
-
-  ;; apply-procedure/k : Proc * ExpVal * Cont -> ExpVal
-  ;; Page: 209
-  (define apply-procedure/k
-    (lambda (proc1 args cont)
-      (cases proc proc1
-        (procedure (vars body saved-env)
-          (value-of/k body
-            (extend-env* vars args saved-env) cont)))))
-
-  '(define apply-procedure/k
-    (lambda (proc1 args cont)
-      (cases proc proc1
-        (procedure (vars body saved-env)
-          (value-of/k body
-            (extend-env* vars args saved-env)
-            cont)))))
+(define instrument-cps (make-parameter #t))
 
 ;;;;;;;;;;;;;;;; interface to test harness ;;;;;;;;;;;;;;;;
-
-(define instrument-cps (make-parameter #t))
 
 ;; run : String -> ExpVal
 
